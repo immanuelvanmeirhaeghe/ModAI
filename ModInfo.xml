@@ -1,0 +1,10 @@
+<Mod ID="ModAI">
+  <Compatible>1.8.1</Compatible>
+  <Name>
+    <EN>ModAI</EN>
+  </Name>
+  <Description>
+    <EN>ModAI is a mod for Green Hell that allows a player to customize some AI behaviour and enable PvP features.</EN>
+  </Description>
+  <Version>1.0.1.0</Version>
+</Mod>
