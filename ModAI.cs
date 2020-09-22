@@ -31,6 +31,14 @@ namespace ModAI
 
         public bool IsModAIActive = false;
 
+        private static string SelectedAI = string.Empty;
+
+        private static int SelectedAIIndex = 0;
+
+        public static string[] GetAINames() => Enum.GetNames(typeof(AI.AIID));
+
+        public bool IsHostile { get; private set; }
+
         public bool CanSwimOption { get; private set; }
 
         public bool IsModActiveForMultiplayer => FindObjectOfType(typeof(ModManager.ModManager)) != null && ModManager.ModManager.AllowModsForMultiplayer;
@@ -39,7 +47,9 @@ namespace ModAI
         private static string CountEnemies = "3";
 
         public bool IsHallucination { get; private set; }
+
         public FirecampGroup PlayerFireCampGroup { get; private set; }
+
 
         public ModAI()
         {
@@ -161,6 +171,9 @@ namespace ModAI
                 AICanSwimOption();
 
                 SpawnEnemyWaveButton();
+
+                SpawnAIButton();
+
             }
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 10000f));
         }
@@ -169,7 +182,7 @@ namespace ModAI
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
                     GUILayout.Label("Spawns a wave of enemies to your camp.", GUI.skin.label);
                     GUILayout.Label("Set how many enemies to spawn.", GUI.skin.label);
@@ -180,7 +193,10 @@ namespace ModAI
                 {
                     GUILayout.Label("How many enemies?: ", GUI.skin.label);
                     CountEnemies = GUILayout.TextField(CountEnemies, GUI.skin.textField);
+                }
 
+                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
                     IsHallucination = GUILayout.Toggle(IsHallucination, $"Is hallucination?", GUI.skin.toggle);
 
                     if (GUILayout.Button("Spawn Wave", GUI.skin.button, GUILayout.MinWidth(100f), GUILayout.MaxWidth(200f)))
@@ -206,6 +222,59 @@ namespace ModAI
             try
             {
                 var wave = enemyAISpawnManager.SpawnWave(Convert.ToInt32(CountEnemies), IsHallucination, PlayerFireCampGroup);
+            }
+            catch (Exception exc)
+            {
+                ModAPI.Log.Write($"[{ModName}.{ModName}:{nameof(OnClickSpawnWaveButton)}] throws exception: {exc.Message}");
+            }
+        }
+
+        private void SpawnAIButton()
+        {
+            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            {
+                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
+                    SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
+
+                    //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
+
+                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MinWidth(100f), GUILayout.MaxWidth(200f)))
+                    {
+                        OnClickSpawnAIButton();
+                        CloseWindow();
+                    }
+                }
+            }
+            else
+            {
+                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
+                {
+                    GUILayout.Label("Spawn AI", GUI.skin.label);
+                    GUILayout.Label("is only for single player or when host", GUI.skin.label);
+                    GUILayout.Label("Host can activate using ModManager.", GUI.skin.label);
+                }
+            }
+        }
+
+        private void OnClickSpawnAIButton()
+        {
+            try
+            {
+                string[] aiNames = GetAINames();
+                SelectedAI = aiNames[SelectedAIIndex];
+
+                GameObject prefab = GreenHellGame.Instance.GetPrefab(SelectedAI);
+                if ((bool)prefab)
+                {
+                    Vector3 forward = Camera.main.transform.forward;
+                    AI ai = Instantiate(prefab, Player.Get().GetHeadTransform().position + forward * 10f, Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)).GetComponent<AI>();
+                    ai.m_Hallucination = IsHallucination;
+                    ai.enabled = true;
+
+                }
+
             }
             catch (Exception exc)
             {
