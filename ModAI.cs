@@ -21,7 +21,7 @@ namespace ModAI
 
         private bool ShowUI;
 
-        public Rect ModAIScreen = new Rect(800f, 800f, 450f, 150f);
+        public static Rect ModAIScreen = new Rect(150f, 800f, 750f, 150f);
 
         private static HUDManager hUDManager;
 
@@ -38,9 +38,6 @@ namespace ModAI
         public static string[] GetAINames()
         {
             var aiNames = Enum.GetNames(typeof(AI.AIID));
-
-            //Array.ForEach(aiNames, aiName => aiName.Replace("_", " "));
-
             return aiNames;
         }
 
@@ -167,7 +164,7 @@ namespace ModAI
         {
             using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
             {
-                if (GUI.Button(new Rect(430f, 0f, 20f, 20f), "X", GUI.skin.button))
+                if (GUI.Button(new Rect(730f, 0f, 20f, 20f), "X", GUI.skin.button))
                 {
                     CloseWindow();
                 }
@@ -256,25 +253,13 @@ namespace ModAI
             {
                 using (var vertiScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    using (var horizontal2Scope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
+                    SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
+                    //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
+                    if (GUILayout.Button("Spawn AI", GUI.skin.button))
                     {
-                        GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
-                    }
-                    using (var horizontal3Scope = new GUILayout.HorizontalScope(GUI.skin.box))
-                    {
-                        GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
-                        SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
-
-                        //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
-                    }
-
-                    using (var horizontal4Scope = new GUILayout.HorizontalScope(GUI.skin.box))
-                    {
-                        if (GUILayout.Button("Spawn AI", GUI.skin.button))
-                        {
-                            OnClickSpawnAIButton();
-                            CloseWindow();
-                        }
+                        OnClickSpawnAIButton();
+                        CloseWindow();
                     }
                 }
             }
