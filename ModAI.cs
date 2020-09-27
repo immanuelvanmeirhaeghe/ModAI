@@ -35,7 +35,14 @@ namespace ModAI
 
         private static int SelectedAIIndex = 0;
 
-        public static string[] GetAINames() => Enum.GetNames(typeof(AI.AIID));
+        public static string[] GetAINames()
+        {
+            var aiNames = Enum.GetNames(typeof(AI.AIID));
+
+            Array.ForEach(aiNames, aiName => aiName.Replace("_", " "));
+
+            return aiNames;
+        }
 
         public bool IsHostile { get; private set; }
 
@@ -49,7 +56,6 @@ namespace ModAI
         public bool IsHallucination { get; private set; }
 
         public FirecampGroup PlayerFireCampGroup { get; private set; }
-
 
         public ModAI()
         {
@@ -71,8 +77,6 @@ namespace ModAI
 
         public static void ShowHUDBigInfo(string text, string header, string textureName)
         {
-            HUDManager hUDManager = HUDManager.Get();
-
             HUDBigInfo hudBigInfo = (HUDBigInfo)hUDManager.GetHUD(typeof(HUDBigInfo));
             HUDBigInfoData hudBigInfoData = new HUDBigInfoData
             {
@@ -221,7 +225,22 @@ namespace ModAI
         {
             try
             {
-                var wave = enemyAISpawnManager.SpawnWave(Convert.ToInt32(CountEnemies), IsHallucination, PlayerFireCampGroup);
+                HumanAIWave wave = enemyAISpawnManager.SpawnWave(Convert.ToInt32(CountEnemies), IsHallucination, PlayerFireCampGroup);
+
+                if (wave != null && wave.m_Members != null && wave.m_Members.Count > 0)
+                {
+                    StringBuilder message = new StringBuilder($"\nWave spawned. {CountEnemies} enemies incoming!");
+
+                    foreach (HumanAI humanAI in wave.m_Members)
+                    {
+                        message.AppendLine($"\n\t{humanAI.GetName()}");
+                    }
+
+                    ShowHUDBigInfo(
+                       SpawnedMessage(message.ToString()),
+                       $"{ModName} Info",
+                       HUDInfoLogTextureType.Count.ToString());
+                }
             }
             catch (Exception exc)
             {
@@ -229,21 +248,30 @@ namespace ModAI
             }
         }
 
+        private static string SpawnedMessage(string message) => $"<color=#{ColorUtility.ToHtmlStringRGBA(Color.red)}>System</color>\n{message}";
+
         private void SpawnAIButton()
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
                 using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
-                    SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
 
-                    //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
-
-                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MinWidth(100f), GUILayout.MaxWidth(200f)))
+                    using (var horizontal2Scope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
-                        OnClickSpawnAIButton();
-                        CloseWindow();
+                        GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
+                        SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
+
+                        //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
+                    }
+
+                    using (var horizontal3Scope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        if (GUILayout.Button("Spawn AI", GUI.skin.button))
+                        {
+                            OnClickSpawnAIButton();
+                            CloseWindow();
+                        }
                     }
                 }
             }
@@ -263,18 +291,26 @@ namespace ModAI
             try
             {
                 string[] aiNames = GetAINames();
-                SelectedAI = aiNames[SelectedAIIndex];
+                SelectedAI = aiNames[SelectedAIIndex].Replace(" ","_");
 
                 GameObject prefab = GreenHellGame.Instance.GetPrefab(SelectedAI);
                 if ((bool)prefab)
                 {
                     Vector3 forward = Camera.main.transform.forward;
-                    AI ai = Instantiate(prefab, Player.Get().GetHeadTransform().position + forward * 10f, Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)).GetComponent<AI>();
-                    ai.m_Hallucination = IsHallucination;
-                    ai.enabled = true;
+                    AI ai = Instantiate(prefab, player.GetHeadTransform().position + forward * 10f, Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)).GetComponent<AI>();
+                    if (ai != null)
+                    {
+                        StringBuilder message = new StringBuilder($"\nAI spawned.");
+                        message.AppendLine($"\n\t{ai.GetName()}");
 
+                        ai.enabled = true;
+
+                        ShowHUDBigInfo(
+                           SpawnedMessage(message.ToString()),
+                           $"{ModName} Info",
+                           HUDInfoLogTextureType.Count.ToString());
+                    }
                 }
-
             }
             catch (Exception exc)
             {
