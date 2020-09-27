@@ -254,9 +254,8 @@ namespace ModAI
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (var vertiScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-
                     using (var horizontal2Scope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
                         GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
