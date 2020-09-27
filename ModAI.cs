@@ -39,7 +39,7 @@ namespace ModAI
         {
             var aiNames = Enum.GetNames(typeof(AI.AIID));
 
-            Array.ForEach(aiNames, aiName => aiName.Replace("_", " "));
+            //Array.ForEach(aiNames, aiName => aiName.Replace("_", " "));
 
             return aiNames;
         }
@@ -259,12 +259,16 @@ namespace ModAI
                     using (var horizontal2Scope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
                         GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
+                    }
+                    using (var horizontal3Scope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
                         SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
 
                         //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
                     }
 
-                    using (var horizontal3Scope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    using (var horizontal4Scope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
                         if (GUILayout.Button("Spawn AI", GUI.skin.button))
                         {
@@ -290,7 +294,7 @@ namespace ModAI
             try
             {
                 string[] aiNames = GetAINames();
-                SelectedAI = aiNames[SelectedAIIndex].Replace(" ","_");
+                SelectedAI = aiNames[SelectedAIIndex];
 
                 GameObject prefab = GreenHellGame.Instance.GetPrefab(SelectedAI);
                 if ((bool)prefab)
