@@ -21,7 +21,7 @@ namespace ModAI
 
         private bool ShowUI;
 
-        public static Rect ModAIScreen = new Rect(150f, 800f, 750f, 150f);
+        public static Rect ModAIScreen = new Rect(Screen.width / 2.75f, Screen.height / 2.75f, 750f, 150f);
 
         private static HUDManager hUDManager;
 
@@ -41,11 +41,11 @@ namespace ModAI
             return aiNames;
         }
 
-        public bool IsHostile { get; private set; }
+        public bool IsHostileOption { get; private set; }
 
         public bool CanSwimOption { get; private set; }
 
-        public bool IsModActiveForMultiplayer => FindObjectOfType(typeof(ModManager.ModManager)) != null && ModManager.ModManager.AllowModsForMultiplayer;
+        public bool IsModActiveForMultiplayer => ModManager.ModManager.Get() != null && ModManager.ModManager.AllowModsForMultiplayer;
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
 
         private static string CountEnemies = "3";
@@ -169,7 +169,7 @@ namespace ModAI
                     CloseWindow();
                 }
 
-                AICanSwimOption();
+                AIOptions();
 
                 SpawnEnemyWaveButton();
 
@@ -255,7 +255,6 @@ namespace ModAI
                 {
                     GUILayout.Label("Select AI to spawn. Then click Spawn AI", GUI.skin.label);
                     SelectedAIIndex = GUILayout.SelectionGrid(SelectedAIIndex, GetAINames(), 3, GUI.skin.button);
-                    //IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
                     if (GUILayout.Button("Spawn AI", GUI.skin.button))
                     {
                         OnClickSpawnAIButton();
@@ -265,7 +264,7 @@ namespace ModAI
             }
             else
             {
-                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (var vertiScope2 = new GUILayout.VerticalScope(GUI.skin.box))
                 {
                     GUILayout.Label("Spawn AI", GUI.skin.label);
                     GUILayout.Label("is only for single player or when host", GUI.skin.label);
@@ -285,13 +284,18 @@ namespace ModAI
                 if ((bool)prefab)
                 {
                     Vector3 forward = Camera.main.transform.forward;
-                    AI ai = Instantiate(prefab, player.GetHeadTransform().position + forward * 10f, Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)).GetComponent<AI>();
+                    AI ai = Instantiate(
+                                        prefab,
+                                        player.GetHeadTransform().position + forward * 10f,
+                                        Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)
+                                        ).GetComponent<AI>();
                     if (ai != null)
                     {
                         StringBuilder message = new StringBuilder($"\nAI spawned.");
                         message.AppendLine($"\n\t{ai.GetName()}");
-
                         ai.enabled = true;
+
+
 
                         ShowHUDBigInfo(
                            SpawnedMessage(message.ToString()),
@@ -306,13 +310,14 @@ namespace ModAI
             }
         }
 
-        private void AICanSwimOption()
+        private void AIOptions()
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    CanSwimOption = GUILayout.Toggle(CanSwimOption, $"AI can swim ?", GUI.skin.toggle);
+                    CanSwimOption = GUILayout.Toggle(CanSwimOption, $"AI can swim?", GUI.skin.toggle);
+                    IsHostileOption = GUILayout.Toggle(IsHostileOption, $"AI is hostile?", GUI.skin.toggle);
                 }
             }
             else
