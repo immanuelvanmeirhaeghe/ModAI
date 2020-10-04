@@ -70,6 +70,12 @@ namespace ModAI
         private void ModManager_onPermissionValueChanged(bool optionValue)
         {
             IsModActiveForMultiplayer = optionValue;
+            ShowHUDBigInfo(
+                          (optionValue ?
+                            HUDBigInfoMessage($"<color=#{ColorUtility.ToHtmlStringRGBA(Color.green)}>Permission to use mods for multiplayer was granted!</color>")
+                            : HUDBigInfoMessage($"<color=#{ColorUtility.ToHtmlStringRGBA(Color.yellow)}>Permission to use mods for multiplayer was revoked!</color>") ),
+                           $"{ModName} Info",
+                           HUDInfoLogTextureType.Count.ToString());
         }
 
         public static ModAI Get()
@@ -245,7 +251,7 @@ namespace ModAI
                     }
 
                     ShowHUDBigInfo(
-                       SpawnedMessage(message.ToString()),
+                       HUDBigInfoMessage(message.ToString()),
                        $"{ModName} Info",
                        HUDInfoLogTextureType.Count.ToString());
                 }
@@ -256,7 +262,7 @@ namespace ModAI
             }
         }
 
-        private static string SpawnedMessage(string message) => $"<color=#{ColorUtility.ToHtmlStringRGBA(Color.red)}>System</color>\n{message}";
+        private static string HUDBigInfoMessage(string message) => $"<color=#{ColorUtility.ToHtmlStringRGBA(Color.red)}>System</color>\n{message}";
 
         private void SpawnAIButton()
         {
@@ -307,7 +313,7 @@ namespace ModAI
                         ai.enabled = true;
 
                         ShowHUDBigInfo(
-                           SpawnedMessage(message.ToString()),
+                           HUDBigInfoMessage(message.ToString()),
                            $"{ModName} Info",
                            HUDInfoLogTextureType.Count.ToString());
                     }
