@@ -16,13 +16,17 @@ namespace ModAI
                         m_Params.m_CanSwim = true;
                     }
 
-                    if (ModAI.Get().IsHostileOption)
+                    if ((bool)m_HostileStateModule)
                     {
-                        m_HostileStateModule.m_State = AIs.HostileStateModule.State.Aggressive;
-                    }
-                    else
-                    {
-                        m_HostileStateModule.m_State = AIs.HostileStateModule.State.Calm;
+                        if (ModAI.Get().IsHostileOption)
+                        {
+                            m_HostileStateModule.m_State = AIs.HostileStateModule.State.Aggressive;
+                        }
+                        else
+                        {
+                            m_HostileStateModule.m_State = AIs.HostileStateModule.State.Calm;
+                        }
+                        m_HostileStateModule.OnUpdate();
                     }
                 }
             }

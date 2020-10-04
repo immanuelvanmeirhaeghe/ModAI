@@ -1,4 +1,5 @@
 ﻿using AIs;
+using ModManager;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,7 +46,7 @@ namespace ModAI
 
         public bool CanSwimOption { get; private set; }
 
-        public bool IsModActiveForMultiplayer => ModManager.ModManager.Get() != null && ModManager.ModManager.AllowModsForMultiplayer;
+        public bool IsModActiveForMultiplayer { get; private set; } //=> ModManager.ModManager.Get() != null && ModManager.ModManager.AllowModsForMultiplayer;
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
 
         private static string CountEnemies = "3";
@@ -59,6 +60,16 @@ namespace ModAI
             IsModAIActive = true;
             useGUILayout = true;
             s_Instance = this;
+        }
+
+        public void Start()
+        {
+            ModManager.ModManager.onPermissionValueChanged += ModManager_onPermissionValueChanged;
+        }
+
+        private void ModManager_onPermissionValueChanged(bool optionValue)
+        {
+            IsModActiveForMultiplayer = optionValue;
         }
 
         public static ModAI Get()
@@ -295,8 +306,6 @@ namespace ModAI
                         message.AppendLine($"\n\t{ai.GetName()}");
                         ai.enabled = true;
 
-
-
                         ShowHUDBigInfo(
                            SpawnedMessage(message.ToString()),
                            $"{ModName} Info",
@@ -306,7 +315,7 @@ namespace ModAI
             }
             catch (Exception exc)
             {
-                ModAPI.Log.Write($"[{ModName}.{ModName}:{nameof(OnClickSpawnWaveButton)}] throws exception: {exc.Message}");
+                ModAPI.Log.Write($"[{ModName}.{ModName}:{nameof(OnClickSpawnAIButton)}] throws exception: {exc.Message}");
             }
         }
 
@@ -324,8 +333,8 @@ namespace ModAI
             {
                 using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("AI can swim option", GUI.skin.label);
-                    GUILayout.Label("is only for single player or when host", GUI.skin.label);
+                    GUILayout.Label("Custom AI behaviour options", GUI.skin.label);
+                    GUILayout.Label("are only for single player or when host", GUI.skin.label);
                     GUILayout.Label("Host can activate using ModManager.", GUI.skin.label);
                 }
             }
