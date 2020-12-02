@@ -11,14 +11,14 @@ namespace ModAI
             {
                 if (!IsDead() && (IsCat() || IsEnemy() || IsPredator()))
                 {
-                    if (ModAI.Get().CanSwimOption)
+                    if (ModAI.Get().CanSwim)
                     {
                         m_Params.m_CanSwim = true;
                     }
 
                     if ((bool)m_HostileStateModule)
                     {
-                        if (ModAI.Get().IsHostileOption)
+                        if (ModAI.Get().IsHostile)
                         {
                             m_HostileStateModule.m_State = AIs.HostileStateModule.State.Aggressive;
                         }

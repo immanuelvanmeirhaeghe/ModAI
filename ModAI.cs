@@ -8,6 +8,13 @@ using UnityEngine;
 
 namespace ModAI
 {
+    public enum MessageType
+    {
+        Info,
+        Warning,
+        Error
+    }
+
     /// <summary>
     /// ModAI is a mod for Green Hell
     /// that allows a player to custom setAI behaviour.
@@ -16,50 +23,69 @@ namespace ModAI
     /// </summary>
     public class ModAI : MonoBehaviour
     {
-        private static ModAI s_Instance;
+        private static ModAI Instance;
 
         private static readonly string ModName = nameof(ModAI);
-
+        private static readonly float ModScreenTotalWidth = 850f;
+        private static readonly float ModScreenTotalHeight = 500f;
+        private static readonly float ModScreenMinWidth = 800f;
+        private static readonly float ModScreenMaxWidth = 850f;
+        private static readonly float ModScreenMinHeight = 50f;
+        private static readonly float ModScreenMaxHeight = 550f;
+        private static float ModScreenStartPositionX { get; set; } = 0f;
+        private static float ModScreenStartPositionY { get; set; } = 0f;
+        private static bool IsMinimized { get; set; } = false;
         private bool ShowUI;
 
-        public static Rect ModAIScreen = new Rect(Screen.width / 2.75f, Screen.height / 2.75f, 750f, 150f);
+        private static HUDManager LocalHUDManager;
+        private static Player LocalPlayer;
+        private static EnemyAISpawnManager LocalEnemyAISpawnManager;
 
-        private static HUDManager hUDManager;
-
-        private static Player player;
-
-        private static EnemyAISpawnManager enemyAISpawnManager;
-
-        public bool IsModAIActive = false;
-
-        private static string SelectedAI = string.Empty;
-
-        private static int SelectedAIIndex = 0;
-
+        public static Rect ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
+        public static string CountEnemies = "3";
+        public static string SelectedAIName = string.Empty;
+        public static int SelectedAIIndex = 0;
         public static string[] GetAINames()
         {
             var aiNames = Enum.GetNames(typeof(AI.AIID));
             return aiNames;
         }
+        public static FirecampGroup PlayerFireCampGroup { get; set; }
 
-        public bool IsHostileOption { get; private set; }
-
-        public bool CanSwimOption { get; private set; }
+        public bool IsHostile { get; private set; } = true;
+        public bool CanSwim { get; private set; } = false;
+        public bool IsHallucination { get; private set; }
 
         public bool IsModActiveForMultiplayer { get; private set; }
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
 
-        private static string CountEnemies = "3";
+        public static string OnlyForSinglePlayerOrHostMessage() => $"Only available for single player or when host. Host can activate using ModManager.";
+        public static string PermissionChangedMessage(string permission) => $"Permission to use mods and cheats in multiplayer was {permission}";
+        public static string HUDBigInfoMessage(string message, MessageType messageType, Color? headcolor = null)
+            => $"<color=#{ (headcolor != null ? ColorUtility.ToHtmlStringRGBA(headcolor.Value) : ColorUtility.ToHtmlStringRGBA(Color.red))  }>{messageType}</color>\n{message}";
 
-        public bool IsHallucination { get; private set; }
+        public void ShowHUDBigInfo(string text)
+        {
+            string header = $"{ModName} Info";
+            string textureName = HUDInfoLogTextureType.Count.ToString();
 
-        public FirecampGroup PlayerFireCampGroup { get; private set; }
+            HUDBigInfo bigInfo = (HUDBigInfo)LocalHUDManager.GetHUD(typeof(HUDBigInfo));
+            HUDBigInfoData.s_Duration = 2f;
+            HUDBigInfoData bigInfoData = new HUDBigInfoData
+            {
+                m_Header = header,
+                m_Text = text,
+                m_TextureName = textureName,
+                m_ShowTime = Time.time
+            };
+            bigInfo.AddInfo(bigInfoData);
+            bigInfo.Show(true);
+        }
 
         public ModAI()
         {
-            IsModAIActive = true;
             useGUILayout = true;
-            s_Instance = this;
+            Instance = this;
         }
 
         public void Start()
@@ -72,35 +98,14 @@ namespace ModAI
             IsModActiveForMultiplayer = optionValue;
             ShowHUDBigInfo(
                           (optionValue ?
-                            HUDBigInfoMessage($"<color=#{ColorUtility.ToHtmlStringRGBA(Color.green)}>Permission to use mods for multiplayer was granted!</color>")
-                            : HUDBigInfoMessage($"<color=#{ColorUtility.ToHtmlStringRGBA(Color.yellow)}>Permission to use mods for multiplayer was revoked!</color>")),
-                           $"{ModName} Info",
-                           HUDInfoLogTextureType.Count.ToString());
+                            HUDBigInfoMessage(PermissionChangedMessage($"granted"), MessageType.Info, Color.green)
+                            : HUDBigInfoMessage(PermissionChangedMessage($"revoked"), MessageType.Info, Color.yellow))
+                            );
         }
 
         public static ModAI Get()
         {
-            return s_Instance;
-        }
-
-        public static void ShowHUDInfoLog(string itemID, string localizedTextKey)
-        {
-            Localization localization = GreenHellGame.Instance.GetLocalization();
-            ((HUDMessages)hUDManager.GetHUD(typeof(HUDMessages))).AddMessage(localization.Get(localizedTextKey) + "  " + localization.Get(itemID));
-        }
-
-        public static void ShowHUDBigInfo(string text, string header, string textureName)
-        {
-            HUDBigInfo hudBigInfo = (HUDBigInfo)hUDManager.GetHUD(typeof(HUDBigInfo));
-            HUDBigInfoData hudBigInfoData = new HUDBigInfoData
-            {
-                m_Header = header,
-                m_Text = text,
-                m_TextureName = textureName,
-                m_ShowTime = Time.time
-            };
-            hudBigInfo.AddInfo(hudBigInfoData);
-            hudBigInfo.Show(true);
+            return Instance;
         }
 
         private void InitSkinUI()
@@ -114,15 +119,15 @@ namespace ModAI
 
             if (blockPlayer)
             {
-                player.BlockMoves();
-                player.BlockRotation();
-                player.BlockInspection();
+                LocalPlayer.BlockMoves();
+                LocalPlayer.BlockRotation();
+                LocalPlayer.BlockInspection();
             }
             else
             {
-                player.UnblockMoves();
-                player.UnblockRotation();
-                player.UnblockInspection();
+                LocalPlayer.UnblockMoves();
+                LocalPlayer.UnblockRotation();
+                LocalPlayer.UnblockInspection();
             }
         }
 
@@ -145,9 +150,9 @@ namespace ModAI
 
         private void InitData()
         {
-            hUDManager = HUDManager.Get();
-            player = Player.Get();
-            enemyAISpawnManager = EnemyAISpawnManager.Get();
+            LocalHUDManager = HUDManager.Get();
+            LocalPlayer = Player.Get();
+            LocalEnemyAISpawnManager = EnemyAISpawnManager.Get();
         }
 
         private void ToggleShowUI()
@@ -168,7 +173,42 @@ namespace ModAI
         private void InitWindow()
         {
             int wid = GetHashCode();
-            ModAIScreen = GUILayout.Window(wid, ModAIScreen, InitModAIScreen, $"{ModName}", GUI.skin.window);
+            ModAIScreen = GUILayout.Window(wid, ModAIScreen, InitModAIScreen, ModName,
+                                                                                                          GUI.skin.window,
+                                                                                                          GUILayout.ExpandWidth(true),
+                                                                                                          GUILayout.MinWidth(ModScreenMinWidth),
+                                                                                                          GUILayout.MaxWidth(ModScreenMaxWidth),
+                                                                                                          GUILayout.ExpandHeight(true),
+                                                                                                          GUILayout.MinHeight(ModScreenMinHeight),
+                                                                                                          GUILayout.MaxHeight(ModScreenMaxHeight));
+        }
+
+        private void ScreenMenuBox()
+        {
+            if (GUI.Button(new Rect(ModAIScreen.width - 40f, 0f, 20f, 20f), "-", GUI.skin.button))
+            {
+                CollapseWindow();
+            }
+
+            if (GUI.Button(new Rect(ModAIScreen.width - 20f, 0f, 20f, 20f), "X", GUI.skin.button))
+            {
+                CloseWindow();
+            }
+        }
+
+        private void CollapseWindow()
+        {
+            if (!IsMinimized)
+            {
+                ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenMinHeight);
+                IsMinimized = true;
+            }
+            else
+            {
+                ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
+                IsMinimized = false;
+            }
+            InitWindow();
         }
 
         private void CloseWindow()
@@ -179,59 +219,70 @@ namespace ModAI
 
         private void InitModAIScreen(int windowId)
         {
-            using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
+            ModScreenStartPositionX = ModAIScreen.x;
+            ModScreenStartPositionY = ModAIScreen.y;
+
+            using (var modContentScope = new GUILayout.VerticalScope(GUI.skin.box))
             {
-                if (GUI.Button(new Rect(730f, 0f, 20f, 20f), "X", GUI.skin.button))
+                ScreenMenuBox();
+                if (!IsMinimized)
                 {
-                    CloseWindow();
+                    ModOptionsBox();
+                    SpawnEnemyWaveBox();
+                    SpawnAIBox();
                 }
-
-                AIOptions();
-
-                SpawnEnemyWaveButton();
-
-                SpawnAIButton();
 
             }
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 10000f));
         }
-
-        private void SpawnEnemyWaveButton()
+        private void ModOptionsBox()
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (var optionsScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("Spawns a wave of enemies to your camp.", GUI.skin.label);
-                    GUILayout.Label("Set how many enemies to spawn.", GUI.skin.label);
-                    GUILayout.Label("Choose whether as a hallucination or not.", GUI.skin.label);
-                }
-
-                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    GUILayout.Label("How many enemies?: ", GUI.skin.label);
-                    CountEnemies = GUILayout.TextField(CountEnemies, GUI.skin.textField);
-                }
-
-                using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
+                    CanSwim = GUILayout.Toggle(CanSwim, $"Can swim?", GUI.skin.toggle);
+                    IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
                     IsHallucination = GUILayout.Toggle(IsHallucination, $"Is hallucination?", GUI.skin.toggle);
+                }
+            }
+            else
+            {
+                OnlyForSingleplayerOrWhenHostBox();
+            }
+        }
 
-                    if (GUILayout.Button("Spawn Wave", GUI.skin.button, GUILayout.MinWidth(100f), GUILayout.MaxWidth(200f)))
+        private void SpawnEnemyWaveBox()
+        {
+            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            {
+                using (var infoScope = new GUILayout.VerticalScope(GUI.skin.box))
+                {
+                    GUILayout.Label("Spawn a wave of enemies to your camp.", GUI.skin.label);
+                    using (var horizontalScope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
-                        OnClickSpawnWaveButton();
-                        CloseWindow();
+                        GUILayout.Label("How many enemies?: ", GUI.skin.label);
+                        CountEnemies = GUILayout.TextField(CountEnemies, GUI.skin.textField, GUILayout.MaxWidth(50f));
+                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                        {
+                            OnClickSpawnWaveButton();
+                        }
                     }
                 }
             }
             else
             {
-                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
-                {
-                    GUILayout.Label("Spawn enemy wave", GUI.skin.label);
-                    GUILayout.Label("is only for single player or when host", GUI.skin.label);
-                    GUILayout.Label("Host can activate using ModManager.", GUI.skin.label);
-                }
+                OnlyForSingleplayerOrWhenHostBox();
+            }
+        }
+
+        private void OnlyForSingleplayerOrWhenHostBox()
+        {
+            using (var infoScope = new GUILayout.VerticalScope(GUI.skin.box))
+            {
+                GUI.color = Color.yellow;
+                GUILayout.Label(OnlyForSinglePlayerOrHostMessage(), GUI.skin.label);
+                GUI.color = Color.white;
             }
         }
 
@@ -239,32 +290,31 @@ namespace ModAI
         {
             try
             {
-                HumanAIWave wave = enemyAISpawnManager.SpawnWave(Convert.ToInt32(CountEnemies), IsHallucination, PlayerFireCampGroup);
-
-                if (wave != null && wave.m_Members != null && wave.m_Members.Count > 0)
+                int countEnemies = ValidMinMax(CountEnemies);
+                if (countEnemies > 0)
                 {
-                    StringBuilder message = new StringBuilder($"\nWave spawned. {CountEnemies} enemies incoming!");
-
-                    foreach (HumanAI humanAI in wave.m_Members)
+                    PlayerFireCampGroup = FirecampGroupsManager.Get().GetGroupToAttack();
+                    HumanAIWave wave = LocalEnemyAISpawnManager.SpawnWave(countEnemies, IsHallucination, PlayerFireCampGroup);
+                    if (wave != null && wave.m_Members != null && wave.m_Members.Count > 0)
                     {
-                        message.AppendLine($"\n\t{humanAI.GetName()}");
+                        StringBuilder info = new StringBuilder($"Wave spawned. {wave.m_Members.Count} enemies incoming!\n");
+                        foreach (HumanAI humanAI in wave.m_Members)
+                        {
+                            info.AppendLine($"\t{humanAI.GetName().Replace("Clone", "")}\n");
+                        }
+                        ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
-
-                    ShowHUDBigInfo(
-                       HUDBigInfoMessage(message.ToString()),
-                       $"{ModName} Info",
-                       HUDInfoLogTextureType.Count.ToString());
                 }
             }
             catch (Exception exc)
             {
-                ModAPI.Log.Write($"[{ModName}.{ModName}:{nameof(OnClickSpawnWaveButton)}] throws exception: {exc.Message}");
+                string info = $"[{ModName}:{nameof(OnClickSpawnWaveButton)}] throws exception:\n{exc.Message}";
+                ModAPI.Log.Write(info);
+                ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
             }
         }
 
-        private static string HUDBigInfoMessage(string message) => $"<color=#{ColorUtility.ToHtmlStringRGBA(Color.red)}>System</color>\n{message}";
-
-        private void SpawnAIButton()
+        private void SpawnAIBox()
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
@@ -295,54 +345,50 @@ namespace ModAI
             try
             {
                 string[] aiNames = GetAINames();
-                SelectedAI = aiNames[SelectedAIIndex];
+                SelectedAIName = aiNames[SelectedAIIndex];
 
-                GameObject prefab = GreenHellGame.Instance.GetPrefab(SelectedAI);
+                GameObject prefab = GreenHellGame.Instance.GetPrefab(SelectedAIName);
                 if ((bool)prefab)
                 {
                     Vector3 forward = Camera.main.transform.forward;
-                    AI ai = Instantiate(
-                                        prefab,
-                                        player.GetHeadTransform().position + forward * 10f,
-                                        Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)
-                                        ).GetComponent<AI>();
+                    Vector3 position = LocalPlayer.GetHeadTransform().position + forward * 10f;
+
+                    AI ai = Instantiate(prefab, position, Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up)).GetComponent<AI>();
                     if (ai != null)
                     {
-                        StringBuilder message = new StringBuilder($"\nAI spawned.");
-                        message.AppendLine($"\n\t{ai.GetName()}");
+                        StringBuilder info = new StringBuilder($"Spawned ");
+                        info.Append($"{ai.GetName()} at position {position}");
                         ai.enabled = true;
-
-                        ShowHUDBigInfo(
-                           HUDBigInfoMessage(message.ToString()),
-                           $"{ModName} Info",
-                           HUDInfoLogTextureType.Count.ToString());
+                        ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                 }
             }
             catch (Exception exc)
             {
-                ModAPI.Log.Write($"[{ModName}.{ModName}:{nameof(OnClickSpawnAIButton)}] throws exception: {exc.Message}");
+                string info = $"[{ModName}:{nameof(OnClickSpawnAIButton)}] throws exception:\n{exc.Message}";
+                ModAPI.Log.Write(info);
+                ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
             }
         }
 
-        private void AIOptions()
+        private int ValidMinMax(string countToValidate)
         {
-            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            if (int.TryParse(countToValidate, out int count))
             {
-                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
+                if (count <= 0)
                 {
-                    CanSwimOption = GUILayout.Toggle(CanSwimOption, $"AI can swim?", GUI.skin.toggle);
-                    IsHostileOption = GUILayout.Toggle(IsHostileOption, $"AI is hostile?", GUI.skin.toggle);
+                    count = 1;
                 }
+                if (count > 10)
+                {
+                    count = 10;
+                }
+                return count;
             }
             else
             {
-                using (var verticalScope = new GUILayout.VerticalScope(GUI.skin.box))
-                {
-                    GUILayout.Label("Custom AI behaviour options", GUI.skin.label);
-                    GUILayout.Label("are only for single player or when host", GUI.skin.label);
-                    GUILayout.Label("Host can activate using ModManager.", GUI.skin.label);
-                }
+                ShowHUDBigInfo(HUDBigInfoMessage($"Invalid input {countToValidate}: please input numbers only - min. 1 and max. 5", MessageType.Error, Color.red));
+                return -1;
             }
         }
     }
