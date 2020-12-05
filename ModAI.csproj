@@ -349,7 +349,6 @@
   <ItemGroup>
     <Compile Include="Extensions\AIExtended.cs" />
     <Compile Include="Extensions\PlayerExtended.cs" />
-    <Compile Include="Extensions\TrapExtended.cs" />
     <Compile Include="ModAI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
