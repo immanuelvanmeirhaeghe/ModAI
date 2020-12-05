@@ -323,8 +323,8 @@ namespace ModAI
                         foreach (HumanAI humanAI in wave.m_Members)
                         {
                             humanAI.enabled = true;
-                            humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                            humanAI.m_Params.m_CanSwim = CanSwim;
+                            //humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                            //humanAI.m_Params.m_CanSwim = CanSwim;
                             info.AppendLine($"\t{humanAI.GetName().Replace("Clone", "")}\n");
                         }
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
@@ -417,12 +417,12 @@ namespace ModAI
                 if (ai != null)
                 {
                     ai.enabled = true;
-                    ai.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                    ai.m_Params.m_CanSwim = CanSwim;
+                    //ai.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                    //ai.m_Params.m_CanSwim = CanSwim;
                     StringBuilder info = new StringBuilder($"Spawned a ");
                     info.Append($"{ai.GetName()} at position {position}\n");
-                    info.AppendLine($"that can{ (CanSwim ? "" : "not")  } swim\n");
-                    info.AppendLine($"and is {ai.m_HostileStateModule.m_State}.");
+                    //info.AppendLine($"that can{ (CanSwim ? "" : "not")  } swim\n");
+                    //info.AppendLine($"and is {ai.m_HostileStateModule.m_State}.");
                     ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                 }
             }
@@ -436,9 +436,9 @@ namespace ModAI
                 {
                     count = 1;
                 }
-                if (count > 10)
+                if (count > 5)
                 {
-                    count = 10;
+                    count = 5;
                 }
                 return count;
             }
