@@ -1,4 +1,5 @@
 ﻿using AIs;
+using ModAI.Enums;
 using ModManager;
 using System;
 using System.Collections.Generic;
@@ -8,17 +9,10 @@ using UnityEngine;
 
 namespace ModAI
 {
-    public enum MessageType
-    {
-        Info,
-        Warning,
-        Error
-    }
-
     /// <summary>
     /// ModAI is a mod for Green Hell
-    /// that allows a player to custom setAI behaviour.
-    /// (only in single player mode - Use ModManager for multiplayer).
+    /// that enables the player to customize some AI behaviour
+    /// and spawn in enemy waves and other creatures.
     /// Enable the mod UI by pressing Home.
     /// </summary>
     public class ModAI : MonoBehaviour
@@ -56,7 +50,9 @@ namespace ModAI
 
         public bool IsHostile { get; private set; } = true;
         public bool CanSwim { get; private set; } = false;
-        public bool IsHallucination { get; private set; }
+        public bool IsHallucination { get; private set; } = false;
+        public bool IsGodModeCheatEnabled { get; private set; } = false;
+        public bool IsItemDecayCheatEnabled { get; private set; } = false;
 
         public bool IsModActiveForMultiplayer { get; private set; }
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
@@ -99,9 +95,9 @@ namespace ModAI
         {
             IsModActiveForMultiplayer = optionValue;
             ShowHUDBigInfo(
-                          (optionValue ?
+                          optionValue ?
                             HUDBigInfoMessage(PermissionChangedMessage($"granted"), MessageType.Info, Color.green)
-                            : HUDBigInfoMessage(PermissionChangedMessage($"revoked"), MessageType.Info, Color.yellow))
+                            : HUDBigInfoMessage(PermissionChangedMessage($"revoked"), MessageType.Info, Color.yellow)
                             );
         }
 
@@ -244,10 +240,24 @@ namespace ModAI
             {
                 using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    StatusForMultiplayer();
-                    CanSwim = GUILayout.Toggle(CanSwim, $"Can swim?", GUI.skin.toggle);
-                    IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
-                    IsHallucination = GUILayout.Toggle(IsHallucination, $"Is hallucination?", GUI.skin.toggle);
+                    GUILayout.Label($"Options for mod behaviour", GUI.skin.label);
+                    using (var modScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        StatusForMultiplayer();
+                    }
+                    GUILayout.Label($"Options for AI behaviour", GUI.skin.label);
+                    using (var AIBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        CanSwim = GUILayout.Toggle(CanSwim, $"Can swim?", GUI.skin.toggle);
+                        IsHostile = GUILayout.Toggle(IsHostile, $"Is hostile?", GUI.skin.toggle);
+                        IsHallucination = GUILayout.Toggle(IsHallucination, $"Is hallucination?", GUI.skin.toggle);
+                    }
+                    GUILayout.Label($"Options for player behaviour", GUI.skin.label);
+                    using (var playerBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        Cheats.m_GodMode = GUILayout.Toggle(IsGodModeCheatEnabled, $"Player God cheat mode enabled?", GUI.skin.toggle);
+                        Cheats.m_ImmortalItems = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Item decay cheat mode enabled?", GUI.skin.toggle);
+                    }
                 }
             }
             else
@@ -258,29 +268,26 @@ namespace ModAI
 
         private void StatusForMultiplayer()
         {
-            using (var multiplayerScope = new GUILayout.VerticalScope(GUI.skin.box))
+            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
-                {
-                    GUI.color = Color.green;
-                    GUILayout.Label(PermissionChangedMessage($"granted"), GUI.skin.label);
-                }
-                else
-                {
-                    GUI.color = Color.yellow;
-                    PermissionChangedMessage($"revoked");
-                }
-                GUI.color = Color.white;
+                GUI.color = Color.green;
+                GUILayout.Label(PermissionChangedMessage($"granted"), GUI.skin.label);
             }
+            else
+            {
+                GUI.color = Color.yellow;
+                GUILayout.Label(PermissionChangedMessage($"revoked"), GUI.skin.label);
+            }
+            GUI.color = Color.white;
         }
 
         private void SpawnWaveBox()
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
-                using (var infoScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("Spawn a wave of enemies to your camp.", GUI.skin.label);
+                    GUILayout.Label("Spawn in a wave of enemies to your camp.", GUI.skin.label);
                     using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
                         GUILayout.Label("How many enemies?: ", GUI.skin.label);
@@ -300,7 +307,7 @@ namespace ModAI
 
         private void OnlyForSingleplayerOrWhenHostBox()
         {
-            using (var infoScope = new GUILayout.VerticalScope(GUI.skin.box))
+            using (var infoScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
                 GUI.color = Color.yellow;
                 GUILayout.Label(OnlyForSinglePlayerOrHostMessage(), GUI.skin.label);
@@ -323,9 +330,11 @@ namespace ModAI
                         foreach (HumanAI humanAI in wave.m_Members)
                         {
                             humanAI.enabled = true;
-                            //humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                            //humanAI.m_Params.m_CanSwim = CanSwim;
+                            humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                            humanAI.m_Params.m_CanSwim = CanSwim;
                             info.AppendLine($"\t{humanAI.GetName().Replace("Clone", "")}\n");
+                            info.AppendLine($"\t{(CanSwim ? "can swim" : "cannot swim")}\n");
+                            info.AppendLine($"\t{(IsHostile ? "and is hostile." : "and is not hostile.")}\n");
                         }
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
@@ -395,7 +404,10 @@ namespace ModAI
                     SelectedAIName = aiNames[SelectedAIIndex];
                     if (!string.IsNullOrEmpty(SelectedAIName))
                     {
-                        SpawnAI(SelectedAIName);
+                        for (int i = 0; i < countSpawnAI; i++)
+                        {
+                            SpawnAI(SelectedAIName);
+                        }
                     }
                 }
             }
@@ -417,12 +429,12 @@ namespace ModAI
                 if (ai != null)
                 {
                     ai.enabled = true;
-                    //ai.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                    //ai.m_Params.m_CanSwim = CanSwim;
-                    StringBuilder info = new StringBuilder($"Spawned a ");
-                    info.Append($"{ai.GetName()} at position {position}\n");
-                    //info.AppendLine($"that can{ (CanSwim ? "" : "not")  } swim\n");
-                    //info.AppendLine($"and is {ai.m_HostileStateModule.m_State}.");
+                    ai.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                    ai.m_Params.m_CanSwim = CanSwim;
+                    StringBuilder info = new StringBuilder($"Spawned in ");
+                    info.Append($"{ai.GetName()} at position {position} that\n");
+                    info.AppendLine($"\t{(CanSwim ? "can swim" : "cannot swim")}\n");
+                    info.AppendLine($"\t{(IsHostile ? "and is hostile." : "and is not hostile.")}\n");
                     ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                 }
             }
