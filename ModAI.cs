@@ -238,6 +238,7 @@ namespace ModAI
         {
             if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
             {
+                Color defaultC = GUI.color;
                 using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
                     GUILayout.Label($"Options for mod behaviour", GUI.skin.label);
@@ -255,10 +256,38 @@ namespace ModAI
                     GUILayout.Label($"Options for player behaviour", GUI.skin.label);
                     using (var playerBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                     {
-                        Cheats.m_GodMode = GUILayout.Toggle(IsGodModeCheatEnabled, $"Player God cheat mode enabled?", GUI.skin.toggle);
-                        Cheats.m_ImmortalItems = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Item decay cheat mode enabled?", GUI.skin.toggle);
+                        bool _godValue = IsGodModeCheatEnabled;
+                        string _godText = string.Empty;
+                        if (IsGodModeCheatEnabled)
+                        {
+                            GUI.color = Color.green;
+                            _godText = $"Player God cheat mode enabled";
+                        }
+                        else
+                        {
+                            GUI.color = Color.yellow;
+                            _godText = $"Player God cheat mode disabled";
+                        }
+                        IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, _godText, GUI.skin.toggle);
+                        Cheats.m_GodMode = _godValue;
+
+                        bool _decayValue = IsGodModeCheatEnabled;
+                        string _decayText = string.Empty;
+                        if (IsItemDecayCheatEnabled)
+                        {
+                            GUI.color = Color.green;
+                            _decayText= $"Item decay cheat mode enabled";
+                        }
+                        else
+                        {
+                            GUI.color = Color.yellow;
+                            _decayText = $"Item decay cheat mode disabled";
+                        }
+                        IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, _decayText, GUI.skin.toggle);
+                        Cheats.m_ImmortalItems = _decayValue;
                     }
                 }
+                GUI.color = defaultC;
             }
             else
             {
@@ -419,45 +448,57 @@ namespace ModAI
 
         private void SpawnAI(string aiName)
         {
-            GameObject prefab = GreenHellGame.Instance.GetPrefab(aiName);
-            if ((bool)prefab)
+            try
             {
-                Vector3 forward = Camera.main.transform.forward;
-                Vector3 position = LocalPlayer.GetHeadTransform().position + forward * 10f;
-
-                AI ai = Instantiate(prefab, position, Quaternion.LookRotation(-forward, Vector3.up)).GetComponent<AI>();
-                if (ai != null)
+                AI ai = default;
+                GameObject prefab = GreenHellGame.Instance.GetPrefab(aiName);
+                if ((bool)prefab)
                 {
-                    ai.enabled = true;
-                    ai.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                    ai.m_Params.m_CanSwim = CanSwim;
-                    StringBuilder info = new StringBuilder($"Spawned in ");
-                    info.Append($"{ai.GetName()} at position {position} that\n");
-                    info.AppendLine($"\t{(CanSwim ? "can swim" : "cannot swim")}\n");
-                    info.AppendLine($"\t{(IsHostile ? "and is hostile." : "and is not hostile.")}\n");
-                    ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
+                    Vector3 forward = Camera.main.transform.forward;
+                    Vector3 position = LocalPlayer.GetHeadTransform().position + forward * 10f;
+                    ai = Instantiate(prefab, position, Quaternion.LookRotation(-forward, Vector3.up)).GetComponent<AI>();
+                    if (ai != null)
+                    {
+                        ai.m_Hallucination = IsHallucination;
+                        StringBuilder info = new StringBuilder($"Spawned in ");
+                        info.Append($"{ai.GetName()} at position {position} that\n");
+                        info.AppendLine($"\t{(IsHallucination ? "as hallucination." : "as real opponent.")}\n");
+                        ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
+                    }
                 }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(SpawnAI));
             }
         }
 
         private int ValidMinMax(string countToValidate)
         {
-            if (int.TryParse(countToValidate, out int count))
+            try
             {
-                if (count <= 0)
+                if (int.TryParse(countToValidate, out int count))
                 {
-                    count = 1;
+                    if (count <= 0)
+                    {
+                        count = 1;
+                    }
+                    if (count > 5)
+                    {
+                        count = 5;
+                    }
+                    return count;
                 }
-                if (count > 5)
+                else
                 {
-                    count = 5;
+                    ShowHUDBigInfo(HUDBigInfoMessage($"Invalid input {countToValidate}: please input numbers only - min. 1 and max. 5", MessageType.Error, Color.red));
+                    return -1;
                 }
-                return count;
             }
-            else
+            catch (Exception exc)
             {
-                ShowHUDBigInfo(HUDBigInfoMessage($"Invalid input {countToValidate}: please input numbers only - min. 1 and max. 5", MessageType.Error, Color.red));
-                return -1;
+                HandleException(exc, nameof(ValidMinMax));
+                return 1;
             }
         }
     }
