@@ -399,14 +399,17 @@ namespace ModAI
                 IsHallucination = GUILayout.Toggle(IsHallucination, $"Switch to set for AI to be a hallucination or not", GUI.skin.toggle);
                 if (_isHallucinationValue != IsHallucination)
                 {
-                    foreach (var activeAi in LocalAIManager.m_ActiveAIs)
+                    if (LocalAIManager.m_ActiveAIs != null)
                     {
-                        activeAi.m_Hallucination = IsHallucination;
-                        if (IsHallucination)
+                        foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                         {
-                            activeAi.Disappear(true);
+                            activeAi.m_Hallucination = IsHallucination;
+                            if (IsHallucination)
+                            {
+                                activeAi.Disappear(true);
+                            }
+                            activeAi.InitializeModules();
                         }
-                        activeAi.InitializeModules();
                     }
                     string _optionText = $"AI is hallucination { (IsHallucination ? "is enabled" : "has been disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
@@ -426,12 +429,15 @@ namespace ModAI
                 IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
                 if (_isHostileValue != IsHostile)
                 {
-                    foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
+                    if (LocalAIManager.m_EnemyAIs != null)
                     {
-                        if (enemyAi.m_HostileStateModule != null)
+                        foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
                         {
-                            enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                            enemyAi.InitializeModules();
+                            if (enemyAi.m_HostileStateModule != null)
+                            {
+                                enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                                enemyAi.InitializeModules();
+                            }
                         }
                     }
                     string _optionText = $"AI is hostile { (IsHostile ? "is enabled" : "has been disabled") }";
@@ -452,12 +458,15 @@ namespace ModAI
                 CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
                 if (_canSwimValue != CanSwim)
                 {
-                    foreach(var activeAi in LocalAIManager.m_ActiveAIs)
+                    if (LocalAIManager.m_ActiveAIs != null)
                     {
-                        if (activeAi.m_Params != null)
+                        foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                         {
-                            activeAi.m_Params.m_CanSwim = CanSwim;
-                            activeAi.InitializeModules();
+                            if (activeAi.m_Params != null)
+                            {
+                                activeAi.m_Params.m_CanSwim = CanSwim;
+                                activeAi.InitializeModules();
+                            }
                         }
                     }
                     string _optionText = $"AI can swim { (CanSwim ? "is enabled" : "has been disabled") }";
@@ -560,7 +569,7 @@ namespace ModAI
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
-                        StringBuilder info = new StringBuilder($"Wave of {humanAiWave.m_Members.Count} enemies incoming!\n");
+                        StringBuilder info = new StringBuilder($"Wave of {humanAiWave.m_Members.Count} tribals incoming!\n");
                         foreach (HumanAI humanAI in humanAiWave.m_Members)
                         {
                             humanAI.enabled = true;
@@ -569,6 +578,7 @@ namespace ModAI
                             info.AppendLine($"\t{humanAI.GetName().Replace("Clone", "")} incoming\n");
                             info.AppendLine($"\t{(CanSwim ? "can swim" : "cannot swim")}\n");
                             info.AppendLine($"\t{(IsHostile ? "and is hostile." : "and is not hostile.")}\n");
+                            info.AppendLine($"\t{(IsHallucination ? "as hallucination." : "as real ")}");
                         }
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
