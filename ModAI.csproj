@@ -348,7 +348,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Enums.cs" />
-    <Compile Include="Extensions\AIExtended.cs" />
     <Compile Include="Extensions\PlayerExtended.cs" />
     <Compile Include="ModAI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("ModAPI.ModAI")]
 [assembly: AssemblyDescription("ModAI is a mod for Green Hell that enables a player to use cheats, customize some AI behaviour and spawn in enemy waves and other creatures.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("Dragon Legion")]
+[assembly: AssemblyCompany("[Dragon Legion]Immaanuel")]
 [assembly: AssemblyProduct("ModAPI.ModAI")]
-[assembly: AssemblyCopyright("Copyright ©  2020")]
+[assembly: AssemblyCopyright("Copyright ©  2021")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -29,5 +29,5 @@ using System.Runtime.InteropServices;
 //      Build Number
 //      Revision
 //
-[assembly: AssemblyVersion("1.0.3.4")]
-[assembly: AssemblyFileVersion("1.0.3.4")]
+[assembly: AssemblyVersion("1.0.3.5")]
+[assembly: AssemblyFileVersion("1.0.3.5")]
