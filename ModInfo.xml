@@ -1,10 +1,18 @@
 <Mod ID="ModAI">
-  <Compatible>2.0.4</Compatible>
+  <Compatible>2.1.3</Compatible>
+  <Button Standard="NumPad8" ID="ModKeybindingId">
+    <Name>
+      <EN>ModKeybindingId</EN>
+    </Name>
+    <Description>
+      <EN>ModKeybindingId</EN>
+    </Description>
+  </Button>
   <Name>
     <EN>ModAI</EN>
   </Name>
   <Description>
-    <EN>ModAI is a mod for Green Hell that enables a player to use cheats, customize some AI behaviour and spawn in enemy waves and other creatures.</EN>
+    <EN>ModAI is a mod for Green Hell that enables a player to use cheats, customize some AI behaviour and spawn in enemy waves and other creatures. Press Keypad8 (default) or the key configurable in ModAPI to open the main mod screen.</EN>
   </Description>
-  <Version>1.0.3.4</Version>
+  <Version>1.0.3.5</Version>
 </Mod>

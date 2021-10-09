@@ -328,12 +328,16 @@ namespace ModAI
         {
             try
             {
+                string _decayText = $"Item decay cheat mode { (IsItemDecayCheatEnabled ? "is enabled" : "has been disabled") }";
+                GUI.color = Color.cyan;
+                GUILayout.Label($"Currently: {_decayText}", GUI.skin.label);
+
+                GUI.color = DefaultGuiColor;
                 bool _decayCheatEnabled = IsItemDecayCheatEnabled;
                 IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
                 if (_decayCheatEnabled != IsItemDecayCheatEnabled)
                 {
-                    Cheats.m_ImmortalItems = _decayCheatEnabled;
-                    string _decayText = $"Item decay cheat mode { (IsItemDecayCheatEnabled ? "is enabled" : "has been disabled") }";
+                    Cheats.m_ImmortalItems = IsItemDecayCheatEnabled;
                     ShowHUDBigInfo(HUDBigInfoMessage(_decayText, MessageType.Info, Color.green));
                 }
             }
@@ -347,12 +351,16 @@ namespace ModAI
         {
             try
             {
+                string _godText = $"Player God cheat mode { (IsGodModeCheatEnabled ? "is enabled" : "has been disabled") }";
+                GUI.color = Color.cyan;
+                GUILayout.Label($"Currently: {_godText}", GUI.skin.label);
+
+                GUI.color = DefaultGuiColor;
                 bool _godModeCheatEnabled = IsGodModeCheatEnabled;
                 IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player God cheat mode", GUI.skin.toggle);
                 if (_godModeCheatEnabled != IsGodModeCheatEnabled)
                 {
-                    Cheats.m_GodMode = _godModeCheatEnabled;
-                    string _godText = $"Player God cheat mode { (IsGodModeCheatEnabled ? "is enabled" : "has been disabled") }";
+                    Cheats.m_GodMode = IsGodModeCheatEnabled;
                     ShowHUDBigInfo(HUDBigInfoMessage(_godText, MessageType.Info, Color.green));
                 }
             }
@@ -368,6 +376,8 @@ namespace ModAI
             {
                 using (var AIBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
+                    CurrentlySetAiOptionsInfoBox();
+
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label($"AI options: ", GUI.skin.label);
                     CanSwimOption();
@@ -383,12 +393,11 @@ namespace ModAI
 
         private void IsHallucinationOption()
         {
-
             try
             {
-                bool _optionValue = IsHallucination;
+                bool _isHallucinationValue = IsHallucination;
                 IsHallucination = GUILayout.Toggle(IsHallucination, $"Switch to set for AI to be a hallucination or not", GUI.skin.toggle);
-                if (_optionValue != IsHallucination)
+                if (_isHallucinationValue != IsHallucination)
                 {
                     foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                     {
@@ -413,14 +422,17 @@ namespace ModAI
         {
             try
             {
-                bool _optionValue = IsHostile;
+                bool _isHostileValue = IsHostile;
                 IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
-                if (_optionValue != IsHostile)
+                if (_isHostileValue != IsHostile)
                 {
-                    foreach (var activeAi in LocalAIManager.m_ActiveAIs)
+                    foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
                     {
-                        activeAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                        activeAi.InitializeModules();
+                        if (enemyAi.m_HostileStateModule != null)
+                        {
+                            enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                            enemyAi.InitializeModules();
+                        }
                     }
                     string _optionText = $"AI is hostile { (IsHostile ? "is enabled" : "has been disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
@@ -436,14 +448,17 @@ namespace ModAI
         {
             try
             {
-                bool _optionValue = CanSwim;
+                bool _canSwimValue = CanSwim;
                 CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
-                if (_optionValue != CanSwim)
+                if (_canSwimValue != CanSwim)
                 {
                     foreach(var activeAi in LocalAIManager.m_ActiveAIs)
                     {
-                        activeAi.m_Params.m_CanSwim = CanSwim;
-                        activeAi.InitializeModules();
+                        if (activeAi.m_Params != null)
+                        {
+                            activeAi.m_Params.m_CanSwim = CanSwim;
+                            activeAi.InitializeModules();
+                        }
                     }
                     string _optionText = $"AI can swim { (CanSwim ? "is enabled" : "has been disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
@@ -504,11 +519,7 @@ namespace ModAI
             {
                 using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUI.color = Color.cyan;
-                    GUILayout.Label($"Currently set AI options: ", GUI.skin.label);
-                    GUILayout.Label($"Can swim { (CanSwim ? "enabled" : "disabled") }", GUI.skin.label);
-                    GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
-                    GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
+                    CurrentlySetAiOptionsInfoBox();
 
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label("Set the above AI options. Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
@@ -590,12 +601,7 @@ namespace ModAI
             {
                 using (var spawnaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUI.color = Color.cyan;
-                    GUILayout.Label($"Currently set AI options: ", GUI.skin.label);
-                    GUILayout.Label($"Can swim { (CanSwim ? "enabled" : "disabled") }", GUI.skin.label);
-                    GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
-                    GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
-                    GUILayout.Label($"Currently selected AI: {SelectedAiName}", GUI.skin.label);
+                    CurrentlySetAiOptionsInfoBox();
 
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label("Set the above AI options. Select an AI from the grid below. Set how many of the selected AI you would like, then click [Spawn AI].", GUI.skin.label);
@@ -615,6 +621,16 @@ namespace ModAI
             {
                 OnlyForSingleplayerOrWhenHostBox();
             }
+        }
+
+        private void CurrentlySetAiOptionsInfoBox()
+        {
+            GUI.color = Color.cyan;
+            GUILayout.Label($"Currently set AI options: ", GUI.skin.label);
+            GUILayout.Label($"Can swim { (CanSwim ? "enabled" : "disabled") }", GUI.skin.label);
+            GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
+            GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
+            GUILayout.Label($"Currently selected AI: {SelectedAiName}", GUI.skin.label);
         }
 
         private void AISelectionScrollViewBox()
