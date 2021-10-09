@@ -312,6 +312,8 @@ namespace ModAI
             {
                 using (var playerBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
+                    CurrentlySetPlayerCheatOptionsInfoBox();
+
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label($"Player cheat options: ", GUI.skin.label);
                     GodModeCheatOption();
@@ -328,16 +330,13 @@ namespace ModAI
         {
             try
             {
-                string _decayText = $"Item decay cheat mode { (IsItemDecayCheatEnabled ? "is enabled" : "has been disabled") }";
-                GUI.color = Color.cyan;
-                GUILayout.Label($"Currently: {_decayText}", GUI.skin.label);
-
                 GUI.color = DefaultGuiColor;
                 bool _decayCheatEnabled = IsItemDecayCheatEnabled;
                 IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
                 if (_decayCheatEnabled != IsItemDecayCheatEnabled)
                 {
                     Cheats.m_ImmortalItems = IsItemDecayCheatEnabled;
+                    string _decayText = $"Item decay cheat mode has been { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_decayText, MessageType.Info, Color.green));
                 }
             }
@@ -351,16 +350,13 @@ namespace ModAI
         {
             try
             {
-                string _godText = $"Player God cheat mode { (IsGodModeCheatEnabled ? "is enabled" : "has been disabled") }";
-                GUI.color = Color.cyan;
-                GUILayout.Label($"Currently: {_godText}", GUI.skin.label);
-
                 GUI.color = DefaultGuiColor;
                 bool _godModeCheatEnabled = IsGodModeCheatEnabled;
                 IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player God cheat mode", GUI.skin.toggle);
                 if (_godModeCheatEnabled != IsGodModeCheatEnabled)
                 {
                     Cheats.m_GodMode = IsGodModeCheatEnabled;
+                    string _godText = $"Player God cheat mode has been { (IsGodModeCheatEnabled ? "enabled" : "disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_godText, MessageType.Info, Color.green));
                 }
             }
@@ -411,7 +407,7 @@ namespace ModAI
                             activeAi.InitializeModules();
                         }
                     }
-                    string _optionText = $"AI is hallucination { (IsHallucination ? "is enabled" : "has been disabled") }";
+                    string _optionText = $"AI is hallucination has been { (IsHallucination ? "enabled" : "disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                 }
             }
@@ -440,7 +436,7 @@ namespace ModAI
                             }
                         }
                     }
-                    string _optionText = $"AI is hostile { (IsHostile ? "is enabled" : "has been disabled") }";
+                    string _optionText = $"AI is hostile has been { (IsHostile ? "enabled" : "disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                 }
             }
@@ -469,7 +465,7 @@ namespace ModAI
                             }
                         }
                     }
-                    string _optionText = $"AI can swim { (CanSwim ? "is enabled" : "has been disabled") }";
+                    string _optionText = $"AI can swim has been { (CanSwim ? "enabled" : "disabled") }";
                     ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                 }
             }
@@ -528,8 +524,6 @@ namespace ModAI
             {
                 using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    CurrentlySetAiOptionsInfoBox();
-
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label("Set the above AI options. Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
                     using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
@@ -569,16 +563,23 @@ namespace ModAI
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
-                        StringBuilder info = new StringBuilder($"Wave of {humanAiWave.m_Members.Count} tribals incoming!\n");
+                        StringBuilder info = new StringBuilder($"Wave of {humanAiWave.m_Members.Count} tribals incoming!");
                         foreach (HumanAI humanAI in humanAiWave.m_Members)
                         {
                             humanAI.enabled = true;
-                            humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                            humanAI.m_Params.m_CanSwim = CanSwim;
-                            info.AppendLine($"\t{humanAI.GetName().Replace("Clone", "")} incoming\n");
-                            info.AppendLine($"\t{(CanSwim ? "can swim" : "cannot swim")}\n");
-                            info.AppendLine($"\t{(IsHostile ? "and is hostile." : "and is not hostile.")}\n");
-                            info.AppendLine($"\t{(IsHallucination ? "as hallucination." : "as real ")}");
+                            if (humanAI.m_HostileStateModule != null)
+                            {
+                                humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                            }
+                            if (humanAI.m_Params != null)
+                            {
+                                humanAI.m_Params.m_CanSwim = CanSwim;
+                            }
+
+                            info.AppendLine($"{humanAI.GetName().Replace("Clone", "")} incoming");
+                            info.AppendLine($"{(CanSwim ? "can swim" : "cannot swim")}");
+                            info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
+                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real ")}");
                         }
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
@@ -611,8 +612,6 @@ namespace ModAI
             {
                 using (var spawnaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    CurrentlySetAiOptionsInfoBox();
-
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label("Set the above AI options. Select an AI from the grid below. Set how many of the selected AI you would like, then click [Spawn AI].", GUI.skin.label);
                     AISelectionScrollViewBox();
@@ -641,6 +640,14 @@ namespace ModAI
             GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
             GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
             GUILayout.Label($"Currently selected AI: {SelectedAiName}", GUI.skin.label);
+        }
+
+        private void CurrentlySetPlayerCheatOptionsInfoBox()
+        {
+            GUI.color = Color.cyan;
+            GUILayout.Label($"Currently set player cheat options: ", GUI.skin.label);
+            GUILayout.Label($"Item decay cheat mode { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }", GUI.skin.label);
+            GUILayout.Label($"Player God cheat mode { (IsGodModeCheatEnabled ? "enabled" : "disabled") }", GUI.skin.label);
         }
 
         private void AISelectionScrollViewBox()
@@ -707,7 +714,9 @@ namespace ModAI
                         ai.m_Hallucination = IsHallucination;
                         StringBuilder info = new StringBuilder($"Spawned in {ai.GetName()}");
                         info.AppendLine($"at position {position}");
-                        info.AppendLine($"{(IsHallucination ? "as hallucination." : "as real ")}");
+                        info.AppendLine($"that {(CanSwim ? "can swim" : "cannot swim")}");
+                        info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
+                        info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                     else
