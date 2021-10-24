@@ -175,13 +175,13 @@ namespace ModAI
 
                 configuredKeyCode = (KeyCode)(!string.IsNullOrEmpty(configuredKeybinding)
                                                             ? Enum.Parse(typeof(KeyCode), configuredKeybinding)
-                                                            : GetType().GetProperty(buttonId)?.GetValue(this));
+                                                            : GetType()?.GetProperty(buttonId)?.GetValue(this));
                 return configuredKeyCode;
             }
             catch (Exception exc)
             {
                 HandleException(exc, nameof(GetConfigurableKey));
-                configuredKeyCode = (KeyCode)(GetType().GetProperty(buttonId)?.GetValue(this));
+                configuredKeyCode = (KeyCode)(GetType()?.GetProperty(buttonId)?.GetValue(this));
                 return configuredKeyCode;
             }
         }
@@ -623,13 +623,17 @@ namespace ModAI
 
         private void SpawnAIBox()
         {
-            using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
+            using (var spawnaiScope = new GUILayout.VerticalScope(GUI.skin.box))
             {
-                GUILayout.Label("How many?: ", GUI.skin.label);
-                SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                GUILayout.Label($"Set how many {SelectedAiName} you would like, then click [Spawn AI]", GUI.skin.label);
+                using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    OnClickSpawnAIButton();
+                    GUILayout.Label("How many?: ", GUI.skin.label);
+                    SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
+                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                    {
+                        OnClickSpawnAIButton();
+                    }
                 }
             }
         }
@@ -638,7 +642,8 @@ namespace ModAI
         {
             using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
-                if (GUILayout.Button($"Kill all  {SelectedAiName}", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                GUILayout.Label($"To kill all {SelectedAiName}, click [Execute]", GUI.skin.label);
+                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.MaxWidth(200f)))
                 {
                     OnClickKillButton();
                 }
@@ -683,7 +688,6 @@ namespace ModAI
             GUILayout.Label($"Can swim { (CanSwim ? "enabled" : "disabled") }", GUI.skin.label);
             GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
             GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
-            GUILayout.Label($"Currently selected AI: {SelectedAiName}", GUI.skin.label);
         }
 
         private void CurrentlySetPlayerCheatOptionsInfoBox()
@@ -701,11 +705,17 @@ namespace ModAI
                 string[] aiNames = GetAINames();
                 if (aiNames != null)
                 {
-                    GUILayout.Label("AI selection grid: ", GUI.skin.label);
-                    AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
-                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
-                    SelectedAiName = aiNames[SelectedAiIndex];
-                    GUILayout.EndScrollView();
+                    GUI.color = Color.cyan;
+                    GUILayout.Label($"Currently selected AI: {SelectedAiName} ", GUI.skin.label);
+                    using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label("AI selection grid: ", GUI.skin.label);
+                        AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
+                        SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
+                        SelectedAiName = aiNames[SelectedAiIndex];
+                        GUILayout.EndScrollView();
+                    }
                 }
             }
             catch (Exception exc)
