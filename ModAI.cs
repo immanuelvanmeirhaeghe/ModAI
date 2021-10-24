@@ -617,7 +617,7 @@ namespace ModAI
         private void HandleException(Exception exc, string methodName)
         {
             string info = $"[{ModName}:{methodName}] throws exception:\n{exc.Message}";
-            ModAPI.Log.Write(info);
+            ModAPI.Log.Write($"{info}\n\t{exc.StackTrace}");
             ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
         }
 
@@ -739,6 +739,8 @@ namespace ModAI
                         {
                             SpawnAI(SelectedAiName);
                         }
+                        StringBuilder info = new StringBuilder($"Spawned in {SelectedAiCount} x  {SelectedAiName}");
+                        ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                 }
                 else
@@ -758,23 +760,12 @@ namespace ModAI
             {
                 AI ai = default;
                 GameObject prefab = GreenHellGame.Instance.GetPrefab(aiName);
-                if ((bool)prefab)
+                if (prefab != null)
                 {
                     Vector3 forward = Camera.main.transform.forward;
                     Vector3 position = LocalPlayer.GetHeadTransform().position + forward * 10f;
                     ai = Instantiate(prefab, position, Quaternion.LookRotation(-forward, Vector3.up)).GetComponent<AI>();
-                    if (ai != null)
-                    {
-                        StringBuilder info = new StringBuilder($"Spawned in {ai.GetName()}");
-                        info.AppendLine($"at position {position}");
-                        info.AppendLine($"that {(ai.m_Params.m_CanSwim ? "can swim" : "cannot swim")}");
-                        info.AppendLine($"is {ai.m_HostileStateModule.m_State}");
-                        info.AppendLine($"and {(ai.m_Hallucination ? "as hallucination." : "as real")}");
-                        info.AppendLine($"");
-
-                        ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
-                    }
-                    else
+                    if (ai == null)
                     {
                         ShowHUDBigInfo(HUDBigInfoMessage($"Something went wrong. Could not instantiate game object {aiName}!", MessageType.Warning, Color.yellow));
                     }
