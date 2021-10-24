@@ -281,11 +281,31 @@ namespace ModAI
                 if (!IsMinimized)
                 {
                     ModOptionsBox();
-                    SpawnWaveBox();
-                    SpawnAIBox();
+                    ModAIBox();
                 }
             }
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 10000f));
+        }
+
+        private void ModAIBox()
+        {
+            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            {
+                using (var modaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
+                {
+                    GUI.color = DefaultGuiColor;
+                    GUILayout.Label("Set the above AI options.", GUI.skin.label);
+                    SpawnWaveBox();
+                    GUILayout.Label("Select an AI from the grid.", GUI.skin.label);
+                    AISelectionScrollViewBox();
+                    SpawnAIBox();
+                    KillAiBox();
+                }
+            }
+            else
+            {
+                OnlyForSingleplayerOrWhenHostBox();
+            }
         }
 
         private void ModOptionsBox()
@@ -520,26 +540,18 @@ namespace ModAI
 
         private void SpawnWaveBox()
         {
-            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
             {
-                using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
+                GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
+                using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("Set the above AI options. Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
-                    using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    GUILayout.Label("How many?: ", GUI.skin.label);
+                    TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
+                    if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
                     {
-                        GUILayout.Label("How many?: ", GUI.skin.label);
-                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
-                        {
-                            OnClickSpawnWaveButton();
-                        }
+                        OnClickSpawnWaveButton();
                     }
                 }
-            }
-            else
-            {
-                OnlyForSingleplayerOrWhenHostBox();
             }
         }
 
@@ -563,7 +575,7 @@ namespace ModAI
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
-                        StringBuilder info = new StringBuilder($"Wave of {humanAiWave.m_Members.Count} tribals incoming!");
+                        StringBuilder info = new StringBuilder($"Spawned a wave of {humanAiWave.m_Members.Count} tribals!");
                         foreach (HumanAI humanAI in humanAiWave.m_Members)
                         {
                             humanAI.enabled = true;
@@ -576,10 +588,13 @@ namespace ModAI
                                 humanAI.m_Params.m_CanSwim = CanSwim;
                             }
 
+                            info.AppendLine($"");
                             info.AppendLine($"{humanAI.GetName().Replace("Clone", "")} incoming");
-                            info.AppendLine($"{(CanSwim ? "can swim" : "cannot swim")}");
+                            info.AppendLine($"at position {humanAI.transform.position}");
+                            info.AppendLine($"that {(CanSwim ? "can swim" : "cannot swim")}");
                             info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
-                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real ")}");
+                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
+                            info.AppendLine($"");
                         }
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
@@ -608,27 +623,56 @@ namespace ModAI
 
         private void SpawnAIBox()
         {
-            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
-                using (var spawnaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
+                GUILayout.Label("How many?: ", GUI.skin.label);
+                SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
+                if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(200f)))
                 {
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("Set the above AI options. Select an AI from the grid below. Set how many of the selected AI you would like, then click [Spawn AI].", GUI.skin.label);
-                    AISelectionScrollViewBox();
-                    using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                    {
-                        GUILayout.Label("How many?: ", GUI.skin.label);
-                        SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                        if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(200f)))
-                        {
-                            OnClickSpawnAIButton();
-                        }
-                    }
+                    OnClickSpawnAIButton();
                 }
             }
-            else
+        }
+
+        private void KillAiBox()
+        {
+            using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
-                OnlyForSingleplayerOrWhenHostBox();
+                if (GUILayout.Button($"Kill all  {SelectedAiName}", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                {
+                    OnClickKillButton();
+                }
+            }
+        }
+
+        private void OnClickKillButton()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(SelectedAiName))
+                {
+                    foreach (AI ai in LocalAIManager.m_ActiveAIs.Where(an => an.GetName().Contains(SelectedAiName)))
+                    {
+                        DamageInfo damageInfo = new DamageInfo
+                        {
+                            m_Damage = float.MaxValue,
+                            m_Damager = LocalPlayer.gameObject,
+                            m_Normal = Vector3.up,
+                            m_Position = ai.transform.position
+                        };
+                        ai.TakeDamage(damageInfo);
+                    }
+                    StringBuilder info = new StringBuilder($"Killed all {SelectedAiName}!");
+                    ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
+                }
+                else
+                {
+                    ShowHUDBigInfo(HUDBigInfoMessage($"Please select AI to kill!", MessageType.Warning, Color.yellow));
+                }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(OnClickKillButton));
             }
         }
 
@@ -711,12 +755,13 @@ namespace ModAI
                     ai = Instantiate(prefab, position, Quaternion.LookRotation(-forward, Vector3.up)).GetComponent<AI>();
                     if (ai != null)
                     {
-                        ai.m_Hallucination = IsHallucination;
                         StringBuilder info = new StringBuilder($"Spawned in {ai.GetName()}");
                         info.AppendLine($"at position {position}");
-                        info.AppendLine($"that {(CanSwim ? "can swim" : "cannot swim")}");
-                        info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
-                        info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
+                        info.AppendLine($"that {(ai.m_Params.m_CanSwim ? "can swim" : "cannot swim")}");
+                        info.AppendLine($"is {ai.m_HostileStateModule.m_State}");
+                        info.AppendLine($"and {(ai.m_Hallucination ? "as hallucination." : "as real")}");
+                        info.AppendLine($"");
+
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                     else
