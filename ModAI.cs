@@ -14,7 +14,8 @@ namespace ModAI
 {
     /// <summary>
     /// ModAI is a mod for Green Hell that enables a player to use cheats,
-    /// customize some AI behaviour and spawn in enemy waves and other creatures.
+    /// customize some AI behaviour
+    /// and spawn in  enemy waves and other creatures.
     /// Press Keypad8 (default) or the key configurable in ModAPI to open the main mod screen.
     /// </summary>
     public class ModAI : MonoBehaviour
@@ -22,12 +23,12 @@ namespace ModAI
         private static ModAI Instance;
 
         private static readonly string ModName = nameof(ModAI);
-        private static readonly float ModScreenTotalWidth = 850f;
-        private static readonly float ModScreenTotalHeight = 500f;
-        private static readonly float ModScreenMinWidth = 800f;
-        private static readonly float ModScreenMaxWidth = 850f;
+        private static readonly float ModScreenTotalWidth = 500f;
+        private static readonly float ModScreenTotalHeight = 150f;
+        private static readonly float ModScreenMinWidth = 450f;
+        private static readonly float ModScreenMaxWidth = 550f;
         private static readonly float ModScreenMinHeight = 50f;
-        private static readonly float ModScreenMaxHeight = 550f;
+        private static readonly float ModScreenMaxHeight = 200f;
         private static float ModScreenStartPositionX { get; set; } = Screen.width / 8f;
         private static float ModScreenStartPositionY { get; set; } = 0f;
         private static bool IsMinimized { get; set; } = false;
@@ -145,8 +146,19 @@ namespace ModAI
             }
         }
 
+        private void HandleException(Exception exc, string methodName)
+        {
+            string info = $"[{ModName}:{methodName}] throws exception:\n{exc.Message}";
+            ModAPI.Log.Write($"{info}\n\t{exc.StackTrace}");
+            ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
+        }
+
         private static readonly string RuntimeConfigurationFile = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), "RuntimeConfiguration.xml");
         private static KeyCode ModKeybindingId { get; set; } = KeyCode.Keypad8;
+        public bool IsGhostModeCheatEnabled { get; private set; }
+        public bool IsOneShotAICheatEnabled { get; private set; }
+        public bool IsOneShotDestroyCheatEnabled { get; private set; }
+
         private KeyCode GetConfigurableKey(string buttonId)
         {
             KeyCode configuredKeyCode = default;
@@ -171,7 +183,7 @@ namespace ModAI
                     }
                 }
 
-                configuredKeybinding = configuredKeybinding?.Replace("NumPad", "Keypad").Replace("Oem", "");
+                configuredKeybinding = configuredKeybinding?.Replace("NumPad", "Keypad").Replace("Oem", "").Replace("D","Alpha");
 
                 configuredKeyCode = (KeyCode)(!string.IsNullOrEmpty(configuredKeybinding)
                                                             ? Enum.Parse(typeof(KeyCode), configuredKeybinding)
@@ -314,7 +326,7 @@ namespace ModAI
             {
                 using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUILayout.Label($"To toggle the main mod UI, press [{ModKeybindingId}]", GUI.skin.label);
+                    GUILayout.Label($"To toggle the mod main UI, press [{ModKeybindingId}]", GUI.skin.label);
                     MultiplayerOptionBox();
                     PlayerCheatOptionsBox();
                     AiOptionsBox();
@@ -332,11 +344,12 @@ namespace ModAI
             {
                 using (var playerBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    CurrentlySetPlayerCheatOptionsInfoBox();
-
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label($"Player cheat options: ", GUI.skin.label);
                     GodModeCheatOption();
+                    GhostModeCheatOption();
+                    OneShotKillCheatOption();
+                    OneShotDestroyCheatOption();
                     ItemDecayCheatOption();
                 }
             }
@@ -346,18 +359,138 @@ namespace ModAI
             }
         }
 
+        private void OneShotDestroyCheatOption()
+        {
+            try
+            {
+                using (var oneshotdestroycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUI.color = DefaultGuiColor;
+                    bool _oneshotdestroyCheatEnabled = IsOneShotDestroyCheatEnabled;
+                    IsOneShotDestroyCheatEnabled = GUILayout.Toggle(IsOneShotDestroyCheatEnabled, $"Switch to enable or disable oneshot destroy constructions cheat mode", GUI.skin.toggle);
+                    if (_oneshotdestroyCheatEnabled != IsOneShotDestroyCheatEnabled)
+                    {
+                        Cheats.m_OneShotConstructions = IsOneShotDestroyCheatEnabled;
+                        string _oneshotdestroyText = $"Oneshot destroy constructions cheat mode has been { (IsOneShotDestroyCheatEnabled ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_oneshotdestroyText, MessageType.Info, Color.green));
+                    }
+                    if (IsOneShotDestroyCheatEnabled)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
+                }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(OneShotDestroyCheatOption));
+            }
+        }
+
+        private void OneShotKillCheatOption()
+        {
+            try
+            {
+                using (var oneshotkillcheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUI.color = DefaultGuiColor;
+                    bool _oneshotkillCheatEnabled = IsOneShotAICheatEnabled;
+                    IsOneShotAICheatEnabled = GUILayout.Toggle(IsOneShotAICheatEnabled, $"Switch to enable or disable oneshot kill AI cheat mode", GUI.skin.toggle);
+                    if (_oneshotkillCheatEnabled != IsOneShotAICheatEnabled)
+                    {
+                        Cheats.m_OneShotAI = IsOneShotAICheatEnabled;
+                        string _oneshotkillText = $"Oneshot kill AI cheat mode has been { (IsOneShotAICheatEnabled ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_oneshotkillText, MessageType.Info, Color.green));
+                    }
+                    if (IsOneShotAICheatEnabled)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
+                }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(OneShotKillCheatOption));
+            }
+        }
+
+        private void GhostModeCheatOption()
+        {
+            try
+            {
+                using (var ghostModecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUI.color = DefaultGuiColor;
+                    bool _ghostModeCheatEnabled = IsGhostModeCheatEnabled;
+                    IsGhostModeCheatEnabled = GUILayout.Toggle(IsGhostModeCheatEnabled, $"Switch to enable or disable ghost mode cheat mode", GUI.skin.toggle);
+                    if (_ghostModeCheatEnabled != IsGhostModeCheatEnabled)
+                    {
+                        Cheats.m_GhostMode = IsGhostModeCheatEnabled;
+                        string _ghostModeText = $"Ghost mode cheat mode has been { (IsGhostModeCheatEnabled ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_ghostModeText, MessageType.Info, Color.green));
+                    }
+                    if (IsGhostModeCheatEnabled)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
+                }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(GhostModeCheatOption));
+            }
+        }
+
         private void ItemDecayCheatOption()
         {
             try
             {
-                GUI.color = DefaultGuiColor;
-                bool _decayCheatEnabled = IsItemDecayCheatEnabled;
-                IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
-                if (_decayCheatEnabled != IsItemDecayCheatEnabled)
+                using (var itemdecaycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    Cheats.m_ImmortalItems = IsItemDecayCheatEnabled;
-                    string _decayText = $"Item decay cheat mode has been { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }";
-                    ShowHUDBigInfo(HUDBigInfoMessage(_decayText, MessageType.Info, Color.green));
+                    GUI.color = DefaultGuiColor;
+                    bool _decayCheatEnabled = IsItemDecayCheatEnabled;
+                    IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
+                    if (_decayCheatEnabled != IsItemDecayCheatEnabled)
+                    {
+                        Cheats.m_ImmortalItems = IsItemDecayCheatEnabled;
+                        string _decayText = $"Item decay cheat mode has been { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_decayText, MessageType.Info, Color.green));
+                    }
+                    if (IsItemDecayCheatEnabled)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -370,14 +503,29 @@ namespace ModAI
         {
             try
             {
-                GUI.color = DefaultGuiColor;
-                bool _godModeCheatEnabled = IsGodModeCheatEnabled;
-                IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player God cheat mode", GUI.skin.toggle);
-                if (_godModeCheatEnabled != IsGodModeCheatEnabled)
+                using (var godmodecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    Cheats.m_GodMode = IsGodModeCheatEnabled;
-                    string _godText = $"Player God cheat mode has been { (IsGodModeCheatEnabled ? "enabled" : "disabled") }";
-                    ShowHUDBigInfo(HUDBigInfoMessage(_godText, MessageType.Info, Color.green));
+                    GUI.color = DefaultGuiColor;
+                    bool _godModeCheatEnabled = IsGodModeCheatEnabled;
+                    IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player God cheat mode", GUI.skin.toggle);
+                    if (_godModeCheatEnabled != IsGodModeCheatEnabled)
+                    {
+                        Cheats.m_GodMode = IsGodModeCheatEnabled;
+                        string _godText = $"Player God cheat mode has been { (IsGodModeCheatEnabled ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_godText, MessageType.Info, Color.green));
+                    }
+                    if (IsGodModeCheatEnabled)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -392,8 +540,6 @@ namespace ModAI
             {
                 using (var AIBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    CurrentlySetAiOptionsInfoBox();
-
                     GUI.color = DefaultGuiColor;
                     GUILayout.Label($"AI options: ", GUI.skin.label);
                     CanSwimOption();
@@ -411,24 +557,39 @@ namespace ModAI
         {
             try
             {
-                bool _isHallucinationValue = IsHallucination;
-                IsHallucination = GUILayout.Toggle(IsHallucination, $"Switch to set for AI to be a hallucination or not", GUI.skin.toggle);
-                if (_isHallucinationValue != IsHallucination)
+                using (var isHallucinationScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    if (LocalAIManager.m_ActiveAIs != null)
+                    bool _isHallucinationValue = IsHallucination;
+                    IsHallucination = GUILayout.Toggle(IsHallucination, $"Switch to set for AI to be a hallucination or not", GUI.skin.toggle);
+                    if (_isHallucinationValue != IsHallucination)
                     {
-                        foreach (var activeAi in LocalAIManager.m_ActiveAIs)
+                        if (LocalAIManager.m_ActiveAIs != null)
                         {
-                            activeAi.m_Hallucination = IsHallucination;
-                            if (IsHallucination)
+                            foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                             {
-                                activeAi.Disappear(true);
+                                activeAi.m_Hallucination = IsHallucination;
+                                if (IsHallucination)
+                                {
+                                    activeAi.Disappear(true);
+                                }
+                                activeAi.InitializeModules();
                             }
-                            activeAi.InitializeModules();
                         }
+                        string _optionText = $"AI is hallucination has been { (IsHallucination ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                     }
-                    string _optionText = $"AI is hallucination has been { (IsHallucination ? "enabled" : "disabled") }";
-                    ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
+                    if (IsHallucination)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -441,23 +602,38 @@ namespace ModAI
         {
             try
             {
-                bool _isHostileValue = IsHostile;
-                IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
-                if (_isHostileValue != IsHostile)
+                using (var IsHostileScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    if (LocalAIManager.m_EnemyAIs != null)
+                    bool _isHostileValue = IsHostile;
+                    IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
+                    if (_isHostileValue != IsHostile)
                     {
-                        foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
+                        if (LocalAIManager.m_EnemyAIs != null)
                         {
-                            if (enemyAi.m_HostileStateModule != null)
+                            foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
                             {
-                                enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                                enemyAi.InitializeModules();
+                                if (enemyAi.m_HostileStateModule != null)
+                                {
+                                    enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                                    enemyAi.InitializeModules();
+                                }
                             }
                         }
+                        string _optionText = $"AI is hostile has been { (IsHostile ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                     }
-                    string _optionText = $"AI is hostile has been { (IsHostile ? "enabled" : "disabled") }";
-                    ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
+                    if (IsHostile)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -470,23 +646,38 @@ namespace ModAI
         {
             try
             {
-                bool _canSwimValue = CanSwim;
-                CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
-                if (_canSwimValue != CanSwim)
+                using (var CanSwimScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    if (LocalAIManager.m_ActiveAIs != null)
+                    bool _canSwimValue = CanSwim;
+                    CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
+                    if (_canSwimValue != CanSwim)
                     {
-                        foreach (var activeAi in LocalAIManager.m_ActiveAIs)
+                        if (LocalAIManager.m_ActiveAIs != null)
                         {
-                            if (activeAi.m_Params != null)
+                            foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                             {
-                                activeAi.m_Params.m_CanSwim = CanSwim;
-                                activeAi.InitializeModules();
+                                if (activeAi.m_Params != null)
+                                {
+                                    activeAi.m_Params.m_CanSwim = CanSwim;
+                                    activeAi.InitializeModules();
+                                }
                             }
                         }
+                        string _optionText = $"AI can swim has been { (CanSwim ? "enabled" : "disabled") }";
+                        ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
                     }
-                    string _optionText = $"AI can swim has been { (CanSwim ? "enabled" : "disabled") }";
-                    ShowHUDBigInfo(HUDBigInfoMessage(_optionText, MessageType.Info, Color.green));
+                    if (CanSwim)
+                    {
+                        GUI.color = Color.cyan;
+                        GUILayout.Label($"enabled", GUI.skin.label);
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                        GUILayout.Label($"disabled", GUI.skin.label);
+                    }
+
+                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -571,8 +762,8 @@ namespace ModAI
                 int validatedTribalCount = ValidMinMax(TribalsInWaveCount);
                 if (validatedTribalCount > 0)
                 {
-                    PlayerFireCampGroup = LocalFirecampGroupsManager.GetGroupToAttack();
-                    HumanAIWave humanAiWave = LocalEnemyAISpawnManager.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
+                    PlayerFireCampGroup = LocalFirecampGroupsManager?.GetGroupToAttack();
+                    HumanAIWave humanAiWave = LocalEnemyAISpawnManager?.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
                         StringBuilder info = new StringBuilder($"Spawned a wave of {humanAiWave.m_Members.Count} tribals!");
@@ -596,6 +787,7 @@ namespace ModAI
                             info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
                             info.AppendLine($"");
                         }
+                        humanAiWave.StartWave(PlayerFireCampGroup);
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                     else
@@ -612,13 +804,6 @@ namespace ModAI
             {
                 HandleException(exc, nameof(OnClickSpawnWaveButton));
             }
-        }
-
-        private void HandleException(Exception exc, string methodName)
-        {
-            string info = $"[{ModName}:{methodName}] throws exception:\n{exc.Message}";
-            ModAPI.Log.Write($"{info}\n\t{exc.StackTrace}");
-            ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
         }
 
         private void SpawnAIBox()
@@ -681,23 +866,6 @@ namespace ModAI
             }
         }
 
-        private void CurrentlySetAiOptionsInfoBox()
-        {
-            GUI.color = Color.cyan;
-            GUILayout.Label($"Currently set AI options: ", GUI.skin.label);
-            GUILayout.Label($"Can swim { (CanSwim ? "enabled" : "disabled") }", GUI.skin.label);
-            GUILayout.Label($"Is hostile { (IsHostile ? "enabled" : "disabled") }", GUI.skin.label);
-            GUILayout.Label($"Is hallucination { (IsHallucination ? "enabled" : "disabled") }", GUI.skin.label);
-        }
-
-        private void CurrentlySetPlayerCheatOptionsInfoBox()
-        {
-            GUI.color = Color.cyan;
-            GUILayout.Label($"Currently set player cheat options: ", GUI.skin.label);
-            GUILayout.Label($"Item decay cheat mode { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }", GUI.skin.label);
-            GUILayout.Label($"Player God cheat mode { (IsGodModeCheatEnabled ? "enabled" : "disabled") }", GUI.skin.label);
-        }
-
         private void AISelectionScrollViewBox()
         {
             try
@@ -705,18 +873,18 @@ namespace ModAI
                 string[] aiNames = GetAINames();
                 if (aiNames != null)
                 {
-                    GUI.color = Color.cyan;
-                    GUILayout.Label($"Currently selected AI: {SelectedAiName} ", GUI.skin.label);
                     using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
                     {
                         GUI.color = DefaultGuiColor;
                         GUILayout.Label("AI selection grid: ", GUI.skin.label);
                         AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
+                        GUI.contentColor = (SelectedAiName == aiNames[SelectedAiIndex]) ? Color.cyan : DefaultGuiColor;
                         SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
                         SelectedAiName = aiNames[SelectedAiIndex];
                         GUILayout.EndScrollView();
                     }
                 }
+                GUI.contentColor = DefaultGuiColor;
             }
             catch (Exception exc)
             {
