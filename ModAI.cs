@@ -731,17 +731,28 @@ namespace ModAI
 
         private void SpawnWaveBox()
         {
-            using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
+            if (!IsGodModeCheatEnabled)
             {
-                GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
-                using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("How many?: ", GUI.skin.label);
-                    TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                    if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                    GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
+                    using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
-                        OnClickSpawnWaveButton();
+                        GUILayout.Label("How many?: ", GUI.skin.label);
+                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
+                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                        {
+                            OnClickSpawnWaveButton();
+                        }
                     }
+                }
+            }
+            else
+            {
+                using (var infoScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUI.color = Color.yellow;
+                    GUILayout.Label($"To enable, please switch player cheat God mode off", GUI.skin.label);
                 }
             }
         }
@@ -762,7 +773,7 @@ namespace ModAI
                 int validatedTribalCount = ValidMinMax(TribalsInWaveCount);
                 if (validatedTribalCount > 0)
                 {
-                    PlayerFireCampGroup = LocalFirecampGroupsManager?.GetGroupToAttack();
+                    //PlayerFireCampGroup = LocalFirecampGroupsManager?.GetGroupToAttack();
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager?.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
@@ -787,7 +798,7 @@ namespace ModAI
                             info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
                             info.AppendLine($"");
                         }
-                        humanAiWave.StartWave(PlayerFireCampGroup);
+
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                     else
