@@ -60,6 +60,9 @@ namespace ModAI
         public bool IsHallucination { get; private set; } = false;
         public bool IsGodModeCheatEnabled { get; private set; } = false;
         public bool IsItemDecayCheatEnabled { get; private set; } = false;
+        public bool IsGhostModeCheatEnabled { get; private set; } = false;
+        public bool IsOneShotAICheatEnabled { get; private set; } = false;
+        public bool IsOneShotDestroyCheatEnabled { get; private set; } = false;
 
         public bool IsModActiveForMultiplayer { get; private set; } = false;
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
@@ -155,10 +158,6 @@ namespace ModAI
 
         private static readonly string RuntimeConfigurationFile = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), "RuntimeConfiguration.xml");
         private static KeyCode ModKeybindingId { get; set; } = KeyCode.Keypad8;
-        public bool IsGhostModeCheatEnabled { get; private set; }
-        public bool IsOneShotAICheatEnabled { get; private set; }
-        public bool IsOneShotDestroyCheatEnabled { get; private set; }
-
         private KeyCode GetConfigurableKey(string buttonId)
         {
             KeyCode configuredKeyCode = default;
@@ -377,12 +376,12 @@ namespace ModAI
                     if (IsOneShotDestroyCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -412,12 +411,12 @@ namespace ModAI
                     if (IsOneShotAICheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -447,12 +446,12 @@ namespace ModAI
                     if (IsGhostModeCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -482,12 +481,12 @@ namespace ModAI
                     if (IsItemDecayCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -517,12 +516,12 @@ namespace ModAI
                     if (IsGodModeCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -581,12 +580,12 @@ namespace ModAI
                     if (IsHallucination)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -625,12 +624,12 @@ namespace ModAI
                     if (IsHostile)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -652,9 +651,9 @@ namespace ModAI
                     CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
                     if (_canSwimValue != CanSwim)
                     {
-                        if (LocalAIManager.m_ActiveAIs != null)
+                        if (LocalAIManager?.m_ActiveAIs != null)
                         {
-                            foreach (var activeAi in LocalAIManager.m_ActiveAIs)
+                            foreach (var activeAi in LocalAIManager?.m_ActiveAIs)
                             {
                                 if (activeAi.m_Params != null)
                                 {
@@ -669,12 +668,12 @@ namespace ModAI
                     if (CanSwim)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label);
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label);
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -773,7 +772,6 @@ namespace ModAI
                 int validatedTribalCount = ValidMinMax(TribalsInWaveCount);
                 if (validatedTribalCount > 0)
                 {
-                    //PlayerFireCampGroup = LocalFirecampGroupsManager?.GetGroupToAttack();
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager?.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
@@ -791,11 +789,11 @@ namespace ModAI
                             }
 
                             info.AppendLine($"");
-                            info.AppendLine($"{humanAI.GetName().Replace("Clone", "")} incoming");
+                            info.AppendLine($"{humanAI.GetName().Replace("Clone", "").Replace("(","").Replace(")", "")} incoming");
                             info.AppendLine($"at position {humanAI.transform.position}");
                             info.AppendLine($"that {(CanSwim ? "can swim" : "cannot swim")}");
                             info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
-                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "as real")}");
+                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "is real")}");
                             info.AppendLine($"");
                         }
 
@@ -881,25 +879,48 @@ namespace ModAI
         {
             try
             {
-                string[] aiNames = GetAINames();
-                if (aiNames != null)
+                using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
-                    {
-                        GUI.color = DefaultGuiColor;
-                        GUILayout.Label("AI selection grid: ", GUI.skin.label);
-                        AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
-                        GUI.contentColor = (SelectedAiName == aiNames[SelectedAiIndex]) ? Color.cyan : DefaultGuiColor;
-                        SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
-                        SelectedAiName = aiNames[SelectedAiIndex];
-                        GUILayout.EndScrollView();
-                    }
+                    GUI.color = DefaultGuiColor;
+                    GUILayout.Label("AI selection grid: ", GUI.skin.label);
+
+                    AiSelectionScrollView();
                 }
-                GUI.contentColor = DefaultGuiColor;
+                GUI.color = DefaultGuiColor;
             }
             catch (Exception exc)
             {
                 HandleException(exc, nameof(AISelectionScrollViewBox));
+            }
+        }
+
+        private void AiSelectionScrollView()
+        {
+            try
+            {
+                AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
+
+                string[] aiNames = GetAINames();
+                if (aiNames != null)
+                {
+                    int _selectedAiIndex = SelectedAiIndex;
+                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
+                    if (SelectedAiName == aiNames[_selectedAiIndex])
+                    {
+                        GUI.color = Color.cyan;
+                    }
+                    else
+                    {
+                        GUI.color = DefaultGuiColor;
+                    }
+                    SelectedAiName = aiNames[SelectedAiIndex];
+                }
+
+                GUILayout.EndScrollView();
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(AiSelectionScrollView));
             }
         }
 
