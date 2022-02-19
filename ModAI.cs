@@ -376,12 +376,12 @@ namespace ModAI
                     if (IsOneShotDestroyCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -411,12 +411,12 @@ namespace ModAI
                     if (IsOneShotAICheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -446,12 +446,12 @@ namespace ModAI
                     if (IsGhostModeCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -481,12 +481,12 @@ namespace ModAI
                     if (IsItemDecayCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -516,12 +516,12 @@ namespace ModAI
                     if (IsGodModeCheatEnabled)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -580,12 +580,12 @@ namespace ModAI
                     if (IsHallucination)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -624,12 +624,12 @@ namespace ModAI
                     if (IsHostile)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -668,12 +668,12 @@ namespace ModAI
                     if (CanSwim)
                     {
                         GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
                     else
                     {
                         GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(200f));
+                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(150f));
                     }
 
                     GUI.color = DefaultGuiColor;
@@ -739,7 +739,7 @@ namespace ModAI
                     {
                         GUILayout.Label("How many?: ", GUI.skin.label);
                         TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(150f)))
                         {
                             OnClickSpawnWaveButton();
                         }
@@ -751,7 +751,7 @@ namespace ModAI
                 using (var infoScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
                     GUI.color = Color.yellow;
-                    GUILayout.Label($"To enable, please switch player cheat God mode off", GUI.skin.label);
+                    GUILayout.Label($"To enable, please switch player cheat god mode off", GUI.skin.label);
                 }
             }
         }
@@ -775,10 +775,11 @@ namespace ModAI
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager?.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
+                        int idx = 0;
+                        LocalEnemyAISpawnManager?.BlockSpawn();
                         StringBuilder info = new StringBuilder($"Spawned a wave of {humanAiWave.m_Members.Count} tribals!");
                         foreach (HumanAI humanAI in humanAiWave.m_Members)
                         {
-                            humanAI.enabled = true;
                             if (humanAI.m_HostileStateModule != null)
                             {
                                 humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
@@ -787,16 +788,25 @@ namespace ModAI
                             {
                                 humanAI.m_Params.m_CanSwim = CanSwim;
                             }
+                            Vector3 forward = Camera.main.transform.forward;
+                            Vector3 position = LocalPlayer.GetHeadTransform().position + forward * (50f + (1f * idx)) ;
+                            humanAI.transform.position = position;
 
-                            info.AppendLine($"");
+                            LocalPlayer.GetGPSCoordinates(position, out int gps_lat, out int gps_long);
+                            string GPSCoordinatesW = gps_lat.ToString();
+                            string GPSCoordinatesS = gps_long.ToString();
+
                             info.AppendLine($"{humanAI.GetName().Replace("Clone", "").Replace("(","").Replace(")", "")} incoming");
-                            info.AppendLine($"at position {humanAI.transform.position}");
+                            info.Append($" from W {GPSCoordinatesW}  S {GPSCoordinatesS}");
                             info.AppendLine($"that {(CanSwim ? "can swim" : "cannot swim")}");
-                            info.AppendLine($"{(IsHostile ? "is hostile" : "is not hostile")}");
-                            info.AppendLine($"and {(IsHallucination ? "as hallucination." : "is real")}");
+                            info.Append($" {(IsHostile ? "is hostile" : "is not hostile")}");
+                            info.Append($"and {(IsHallucination ? "as hallucination." : "is real")}");
                             info.AppendLine($"");
-                        }
 
+                            idx++;
+                        }
+                        humanAiWave.Initialize();
+                        LocalEnemyAISpawnManager?.UnblockSpawn();
                         ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                     }
                     else
@@ -824,7 +834,7 @@ namespace ModAI
                 {
                     GUILayout.Label("How many?: ", GUI.skin.label);
                     SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(150f)))
                     {
                         OnClickSpawnAIButton();
                     }
@@ -837,7 +847,7 @@ namespace ModAI
             using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
                 GUILayout.Label($"To kill all {SelectedAiName}, click [Execute]", GUI.skin.label);
-                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.MaxWidth(200f)))
+                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.MaxWidth(150f)))
                 {
                     OnClickKillButton();
                 }
@@ -905,14 +915,6 @@ namespace ModAI
                 {
                     int _selectedAiIndex = SelectedAiIndex;
                     SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
-                    if (_selectedAiIndex == SelectedAiIndex)
-                    {
-                        GUI.contentColor = Color.cyan;
-                    }
-                    else
-                    {
-                        GUI.contentColor = DefaultGuiColor;
-                    }
                     SelectedAiName = aiNames[SelectedAiIndex];
                 }
 
