@@ -903,16 +903,7 @@ namespace ModAI
                 string[] aiNames = GetAINames();
                 if (aiNames != null)
                 {
-                    int _selectedAiIndex = SelectedAiIndex;
                     SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
-                    if (SelectedAiName == aiNames[_selectedAiIndex])
-                    {
-                        GUI.color = Color.cyan;
-                    }
-                    else
-                    {
-                        GUI.color = DefaultGuiColor;
-                    }
                     SelectedAiName = aiNames[SelectedAiIndex];
                 }
 
