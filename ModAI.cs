@@ -151,8 +151,11 @@ namespace ModAI
 
         private void HandleException(Exception exc, string methodName)
         {
-            string info = $"[{ModName}:{methodName}] throws exception:\n{exc.Message}";
-            ModAPI.Log.Write($"{info}\n\t{exc.StackTrace}");
+            string info = $"[{ModName}:{methodName}] throws exception:" +
+                $"{exc.Message}\n" +
+                $"{exc?.StackTrace}\n" +
+                $"{exc?.InnerException}\n";
+            ModAPI.Log.Write(info);
             ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
         }
 
@@ -185,17 +188,27 @@ namespace ModAI
                     }
                 }
 
-                configuredKeybinding = configuredKeybinding?.Replace("NumPad", "Keypad").Replace("Oem", "").Replace("D","Alpha");
+                configuredKeybinding = configuredKeybinding?.Replace("NumPad", "Keypad").Replace("Oem", "").Replace("D", "Alpha").Replace("Subtract", "KeypadMinus");
 
-                configuredKeyCode = (KeyCode)(!string.IsNullOrEmpty(configuredKeybinding)
-                                                            ? Enum.Parse(typeof(KeyCode), configuredKeybinding)
-                                                            : GetType()?.GetProperty(buttonId)?.GetValue(this));
+                ModAPI.Log.Write($"{buttonId}: {configuredKeybinding}");
+
+                if (!string.IsNullOrEmpty(configuredKeybinding))
+                {
+                    configuredKeyCode = EnumUtils<KeyCode>.GetValue(configuredKeybinding);
+                }
+                else
+                {
+                    configuredKeyCode = (KeyCode)(GetType().GetProperty(buttonId)?.GetValue(this));
+                }
+
+                ModAPI.Log.Write($"KeyCode: {configuredKeyCode}");
+
                 return configuredKeyCode;
             }
             catch (Exception exc)
             {
                 HandleException(exc, nameof(GetConfigurableKey));
-                configuredKeyCode = (KeyCode)(GetType()?.GetProperty(buttonId)?.GetValue(this));
+                configuredKeyCode = (KeyCode)(GetType().GetProperty(buttonId)?.GetValue(this));
                 return configuredKeyCode;
             }
         }
@@ -610,14 +623,14 @@ namespace ModAI
                     IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
                     if (_isHostileValue != IsHostile)
                     {
-                        if (LocalAIManager.m_EnemyAIs != null)
+                        if (LocalAIManager.m_ActiveAIs != null)
                         {
-                            foreach (var enemyAi in LocalAIManager.m_EnemyAIs)
+                            foreach (var activeAi in LocalAIManager.m_ActiveAIs)
                             {
-                                if (enemyAi.m_HostileStateModule != null)
+                                if (activeAi.m_HostileStateModule != null)
                                 {
-                                    enemyAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
-                                    enemyAi.InitializeModules();
+                                    activeAi.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
+                                    activeAi.InitializeModules();
                                 }
                             }
                         }
@@ -786,23 +799,23 @@ namespace ModAI
                     HumanAIWave humanAiWave = LocalEnemyAISpawnManager?.SpawnWave(validatedTribalCount, IsHallucination, PlayerFireCampGroup);
                     if (humanAiWave != null && humanAiWave.m_Members != null && humanAiWave.m_Members.Count > 0)
                     {
-                        int idx = 0;
-                        Vector3 forward = Camera.main.transform.forward;
-                        Vector3 spawnPosition = LocalPlayer.GetHeadTransform().position + forward * (50f + (5f * idx));
+                        Vector3 spawnPosition = humanAiWave.transform.position;
                         LocalPlayer.GetGPSCoordinates(spawnPosition, out int gps_lat, out int gps_long);
                         WaveWest = gps_lat.ToString();
                         WaveSouth = gps_long.ToString();
 
                         LocalEnemyAISpawnManager?.BlockSpawn();
 
-                        StringBuilder info = new StringBuilder($"Spawned a wave of {humanAiWave.m_Members.Count} enemies!");
+                        StringBuilder info = new StringBuilder($"Spawned a wave of {humanAiWave.m_Members.Count} enemies");
                         info.Append($" at GPS coordinates W {WaveWest} S {WaveSouth}");
+                        info.AppendLine($"");
                         info.Append($" Each enemy {(CanSwim ? "can swim" : "cannot swim")}, ");
                         info.Append($" {(IsHostile ? "is hostile" : "is not hostile")} ");
                         info.Append($" and {(IsHallucination ? "is a hallucination." : "is real")}.");
-
+                        info.AppendLine($"");
                         foreach (HumanAI humanAI in humanAiWave.m_Members)
                         {
+                            info.Append($"{humanAI.GetName().Replace("Clone", "").Replace("(", "").Replace(")", "")} incoming!");
                             if (humanAI.m_HostileStateModule != null)
                             {
                                 humanAI.m_HostileStateModule.m_State = IsHostile ? HostileStateModule.State.Aggressive : HostileStateModule.State.Calm;
@@ -811,15 +824,7 @@ namespace ModAI
                             {
                                 humanAI.m_Params.m_CanSwim = CanSwim;
                             }
-                            spawnPosition = LocalPlayer.GetHeadTransform().position + forward * (50f + (5f * idx));
-                            humanAI.transform.position = spawnPosition;
-
-                            info.Append($"{humanAI.GetName().Replace("Clone", "").Replace("(","").Replace(")", "")} incoming");
-
-
-                            info.AppendLine($"");
-
-                            idx++;
+                            humanAI.InitializeModules();
                         }
                         humanAiWave.Initialize();
                         LocalEnemyAISpawnManager?.UnblockSpawn();
@@ -876,17 +881,25 @@ namespace ModAI
             {
                 if (!string.IsNullOrEmpty(SelectedAiName))
                 {
-                    foreach (AI ai in LocalAIManager.m_ActiveAIs.Where(an => an.GetName().Contains(SelectedAiName)))
+                    if (LocalAIManager.m_ActiveAIs != null)
                     {
-                        DamageInfo damageInfo = new DamageInfo
+                        var toKill = LocalAIManager.m_ActiveAIs?.Where(an => an.GetName().Contains(SelectedAiName));
+                        if (toKill != null)
                         {
-                            m_Damage = float.MaxValue,
-                            m_Damager = LocalPlayer.gameObject,
-                            m_Normal = Vector3.up,
-                            m_Position = ai.transform.position
-                        };
-                        ai.TakeDamage(damageInfo);
+                            foreach (AI ai in toKill)
+                            {
+                                DamageInfo damageInfo = new DamageInfo
+                                {
+                                    m_Damage = float.MaxValue,
+                                    m_Damager = LocalPlayer.gameObject,
+                                    m_Normal = Vector3.up,
+                                    m_Position = ai.transform.position
+                                };
+                                ai.TakeDamage(damageInfo);
+                            }
+                        }
                     }
+
                     StringBuilder info = new StringBuilder($"Killed all {SelectedAiName}!");
                     ShowHUDBigInfo(HUDBigInfoMessage(info.ToString(), MessageType.Info, Color.green));
                 }
@@ -925,12 +938,14 @@ namespace ModAI
             try
             {
                 AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
+                GUIStyle selectedButton = new GUIStyle(GUI.skin.button);
+                selectedButton.onActive.textColor = Color.cyan;
 
                 string[] aiNames = GetAINames();
                 if (aiNames != null)
                 {
                     int _selectedAiIndex = SelectedAiIndex;
-                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, GUI.skin.button);
+                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, selectedButton);
                     SelectedAiName = aiNames[SelectedAiIndex];
                 }
 
