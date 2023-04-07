@@ -55,6 +55,8 @@ namespace ModAI
         }
         public static FirecampGroup PlayerFireCampGroup { get; set; }
 
+        public string WaveWest { get; private set; }
+        public string WaveSouth { get; private set; }
         public bool IsHostile { get; private set; } = true;
         public bool CanSwim { get; private set; } = false;
         public bool IsHallucination { get; private set; } = false;
@@ -161,8 +163,6 @@ namespace ModAI
 
         private static readonly string RuntimeConfigurationFile = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), "RuntimeConfiguration.xml");
         private static KeyCode ModKeybindingId { get; set; } = KeyCode.Keypad8;
-        public string WaveWest { get; private set; }
-        public string WaveSouth { get; private set; }
 
         private KeyCode GetConfigurableKey(string buttonId)
         {
@@ -188,27 +188,27 @@ namespace ModAI
                     }
                 }
 
-                configuredKeybinding = configuredKeybinding?.Replace("NumPad", "Keypad").Replace("Oem", "").Replace("D", "Alpha").Replace("Subtract", "KeypadMinus");
-
-                ModAPI.Log.Write($"{buttonId}: {configuredKeybinding}");
-
                 if (!string.IsNullOrEmpty(configuredKeybinding))
                 {
                     configuredKeyCode = EnumUtils<KeyCode>.GetValue(configuredKeybinding);
                 }
                 else
                 {
-                    configuredKeyCode = (KeyCode)(GetType().GetProperty(buttonId)?.GetValue(this));
+                    if (buttonId == nameof(ModKeybindingId))
+                    {
+                        configuredKeyCode = ModKeybindingId;
+                    }       
                 }
-
-                ModAPI.Log.Write($"KeyCode: {configuredKeyCode}");
 
                 return configuredKeyCode;
             }
             catch (Exception exc)
             {
                 HandleException(exc, nameof(GetConfigurableKey));
-                configuredKeyCode = (KeyCode)(GetType().GetProperty(buttonId)?.GetValue(this));
+                if (buttonId == nameof(ModKeybindingId))
+                {
+                    configuredKeyCode = ModKeybindingId;
+                }               
                 return configuredKeyCode;
             }
         }
