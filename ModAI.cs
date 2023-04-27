@@ -1,5 +1,8 @@
 ﻿using AIs;
-using ModAI.Enums;
+using ModAI.Data.Enums;
+using ModAI.Data.Interfaces;
+using ModAI.Data.Modding;
+using ModAI.Managers;
 using ModManager;
 using System;
 using System.Collections.Generic;
@@ -21,19 +24,22 @@ namespace ModAI
     public class ModAI : MonoBehaviour
     {
         private static ModAI Instance;
-
         private static readonly string ModName = nameof(ModAI);
-        private static readonly float ModScreenTotalWidth = 500f;
-        private static readonly float ModScreenTotalHeight = 150f;
-        private static readonly float ModScreenMinWidth = 450f;
-        private static readonly float ModScreenMaxWidth = 550f;
-        private static readonly float ModScreenMinHeight = 50f;
-        private static readonly float ModScreenMaxHeight = 200f;
-        private static float ModScreenStartPositionX { get; set; } = Screen.width / 8f;
-        private static float ModScreenStartPositionY { get; set; } = 0f;
-        private static bool IsMinimized { get; set; } = false;
-        private Color DefaultGuiColor = GUI.color;
-        private bool ShowUI = false;
+        private static readonly string RuntimeConfiguration = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), $"{nameof(RuntimeConfiguration)}.xml");
+
+        private static float ModAIScreenTotalWidth { get; set; } = 500f;
+        private static float ModAIScreenTotalHeight { get; set; } = 150f;
+        private static float ModAIScreenMinWidth { get; set; } = 500f;
+        private static float ModAIScreenMaxWidth { get; set; } = Screen.width;
+        private static float ModAIScreenMinHeight { get; set; } = 50f;
+        private static float ModAIScreenMaxHeight { get; set; } = Screen.height;
+        private static float ModAIScreenStartPositionX { get; set; } = Screen.width / 8f;
+        private static float ModAIScreenStartPositionY { get; set; } = 0f;
+        private bool IsModAIScreenMinimized { get; set; } = false;
+        private static int ModAIScreenId { get; set; }
+        private static Rect ModAIScreen = new Rect(ModAIScreenStartPositionX, ModAIScreenStartPositionY, ModAIScreenTotalWidth, ModAIScreenTotalHeight);
+        private bool ShowModAIScreen = false;
+        private bool ShowModInfo { get; set; } = false;
 
         private static CursorManager LocalCursorManager;
         private static HUDManager LocalHUDManager;
@@ -41,69 +47,97 @@ namespace ModAI
         private static EnemyAISpawnManager LocalEnemyAISpawnManager;
         private static FirecampGroupsManager LocalFirecampGroupsManager;
         private static AIManager LocalAIManager;
+        private static StylingManager LocalStylingManager;
+        
+        public Vector2 ModInfoScrollViewPosition { get;  set; }
+        public IConfigurableMod SelectedMod { get; set; }
+        public Vector2 AISelectionScrollViewPosition { get; set; }
 
-        public static Rect ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
-        public static Vector2 AISelectionScrollViewPosition;
-        public static string TribalsInWaveCount { get; set; } = "3";
-        public static string SelectedAiCount { get; set; } = "1";
-        public static string SelectedAiName { get; set; } = string.Empty;
-        public static int SelectedAiIndex { get; set; } = 0;
-        public static string[] GetAINames()
+        public string TribalsInWaveCount { get; set; } = "3";
+        public string SelectedAiCount { get; set; } = "1";
+        public string SelectedAiName { get; set; } = string.Empty;
+        public int SelectedAiIndex { get; set; } = 0;
+        public string[] GetAINames()
         {
             var aiNames = Enum.GetNames(typeof(AI.AIID));
             return aiNames;
         }
-        public static FirecampGroup PlayerFireCampGroup { get; set; }
+        public FirecampGroup PlayerFireCampGroup { get; set; }
 
-        public string WaveWest { get; private set; }
-        public string WaveSouth { get; private set; }
-        public bool IsHostile { get; private set; } = true;
-        public bool CanSwim { get; private set; } = false;
-        public bool IsHallucination { get; private set; } = false;
-        public bool IsGodModeCheatEnabled { get; private set; } = false;
-        public bool IsItemDecayCheatEnabled { get; private set; } = false;
-        public bool IsGhostModeCheatEnabled { get; private set; } = false;
-        public bool IsOneShotAICheatEnabled { get; private set; } = false;
-        public bool IsOneShotDestroyCheatEnabled { get; private set; } = false;
+        public string WaveWest { get; set; } = string.Empty;
+        public string WaveSouth { get; set; } = string.Empty;
+        public bool IsHostile { get; set; } = true;
+        public bool CanSwim { get; set; } = false;
+        public bool IsHallucination { get; set; } = false;
+        public bool IsGodModeCheatEnabled { get; set; } = false;
+        public bool IsItemDecayCheatEnabled { get; set; } = false;
+        public bool IsGhostModeCheatEnabled { get; set; } = false;
+        public bool IsOneShotAICheatEnabled { get; set; } = false;
+        public bool IsOneShotDestroyCheatEnabled { get; set; } = false;
 
         public bool IsModActiveForMultiplayer { get; private set; } = false;
         public bool IsModActiveForSingleplayer => ReplTools.AmIMaster();
 
-        public static string OnlyForSinglePlayerOrHostMessage()
-            => $"Only available for single player or when host. Host can activate using ModManager.";
-        public static string PermissionChangedMessage(string permission, string reason)
+        private string OnlyForSinglePlayerOrHostMessage()
+                     => "Only available for single player or when host. Host can activate using ModManager.";
+        private string PermissionChangedMessage(string permission, string reason)
             => $"Permission to use mods and cheats in multiplayer was {permission} because {reason}.";
-        public static string HUDBigInfoMessage(string message, MessageType messageType, Color? headcolor = null)
-            => $"<color=#{ (headcolor != null ? ColorUtility.ToHtmlStringRGBA(headcolor.Value) : ColorUtility.ToHtmlStringRGBA(Color.red))  }>{messageType}</color>\n{message}";
+        private string HUDBigInfoMessage(string message, MessageType messageType, Color? headcolor = null)
+            => $"<color=#{(headcolor != null ? ColorUtility.ToHtmlStringRGBA(headcolor.Value) : ColorUtility.ToHtmlStringRGBA(Color.red))}>{messageType}</color>\n{message}";
+        private void OnlyForSingleplayerOrWhenHostBox()
+        {
+            using (new GUILayout.HorizontalScope(GUI.skin.box))
+            {
+                GUILayout.Label(OnlyForSinglePlayerOrHostMessage(), LocalStylingManager.ColoredCommentLabel(Color.yellow));
+            }
+        }
 
-        public void ShowHUDBigInfo(string text)
+        private void ModManager_onPermissionValueChanged(bool optionValue)
+        {
+            string reason = optionValue ? "the game host allowed usage" : "the game host did not allow usage";
+            IsModActiveForMultiplayer = optionValue;
+
+            ShowHUDBigInfo(
+                          (optionValue ?
+                            HUDBigInfoMessage(PermissionChangedMessage($"granted", $"{reason}"), MessageType.Info, Color.green)
+                            : HUDBigInfoMessage(PermissionChangedMessage($"revoked", $"{reason}"), MessageType.Info, Color.yellow))
+                            );
+        }
+
+        public void ShowHUDBigInfo(string text, float duration = 3f)
         {
             string header = $"{ModName} Info";
             string textureName = HUDInfoLogTextureType.Count.ToString();
-
-            HUDBigInfo bigInfo = (HUDBigInfo)LocalHUDManager.GetHUD(typeof(HUDBigInfo));
-            HUDBigInfoData.s_Duration = 2f;
-            HUDBigInfoData bigInfoData = new HUDBigInfoData
+            HUDBigInfo obj = (HUDBigInfo)LocalHUDManager.GetHUD(typeof(HUDBigInfo));
+            HUDBigInfoData.s_Duration = duration;
+            HUDBigInfoData data = new HUDBigInfoData
             {
                 m_Header = header,
                 m_Text = text,
                 m_TextureName = textureName,
                 m_ShowTime = Time.time
             };
-            bigInfo.AddInfo(bigInfoData);
-            bigInfo.Show(true);
+            obj.AddInfo(data);
+            obj.Show(show: true);
+        }
+
+        public void ShowHUDInfoLog(string itemID, string localizedTextKey)
+        {
+            Localization localization = GreenHellGame.Instance.GetLocalization();
+            var messages = ((HUDMessages)LocalHUDManager.GetHUD(typeof(HUDMessages)));
+            messages.AddMessage($"{localization.Get(localizedTextKey)}  {localization.Get(itemID)}");
+        }
+
+        protected virtual void Start()
+        {
+            ModManager.ModManager.onPermissionValueChanged += ModManager_onPermissionValueChanged;
+            ShortcutKey = GetShortcutKey(nameof(ShortcutKey));
         }
 
         public ModAI()
         {
             useGUILayout = true;
             Instance = this;
-        }
-
-        public void Start()
-        {
-            ModManager.ModManager.onPermissionValueChanged += ModManager_onPermissionValueChanged;
-            ModKeybindingId = GetConfigurableKey(nameof(ModKeybindingId));
         }
 
         public static ModAI Get()
@@ -134,98 +168,97 @@ namespace ModAI
             }
         }
 
-        private void Update()
+        public KeyCode ShortcutKey { get; set; } = KeyCode.Keypad8;
+
+        public KeyCode GetShortcutKey(string buttonID)
         {
-            if (Input.GetKeyDown(ModKeybindingId))
+            var ConfigurableModList = GetModList();
+            if (ConfigurableModList != null && ConfigurableModList.Count > 0)
             {
-                if (!ShowUI)
+                SelectedMod = ConfigurableModList.Find(cfgMod => cfgMod.ID == ModName);
+                return SelectedMod.ConfigurableModButtons.Find(cfgButton => cfgButton.ID == buttonID).ShortcutKey;
+            }
+            else
+            {
+                return KeyCode.Keypad8;
+            }
+        }
+
+        private List<IConfigurableMod> GetModList()
+        {
+            List<IConfigurableMod> modList = new List<IConfigurableMod>();
+            try
+            {
+                if (File.Exists(RuntimeConfiguration))
+                {
+                    using (XmlReader configFileReader = XmlReader.Create(new StreamReader(RuntimeConfiguration)))
+                    {
+                        while (configFileReader.Read())
+                        {
+                            configFileReader.ReadToFollowing("Mod");
+                            do
+                            {
+                                string gameID = GameID.GreenHell.ToString();
+                                string modID = configFileReader.GetAttribute(nameof(IConfigurableMod.ID));
+                                string uniqueID = configFileReader.GetAttribute(nameof(IConfigurableMod.UniqueID));
+                                string version = configFileReader.GetAttribute(nameof(IConfigurableMod.Version));
+
+                                var configurableMod = new ConfigurableMod(gameID, modID, uniqueID, version);
+
+                                configFileReader.ReadToDescendant("Button");
+                                do
+                                {
+                                    string buttonID = configFileReader.GetAttribute(nameof(IConfigurableModButton.ID));
+                                    string buttonKeyBinding = configFileReader.ReadElementContentAsString();
+
+                                    configurableMod.AddConfigurableModButton(buttonID, buttonKeyBinding);
+
+                                } while (configFileReader.ReadToNextSibling("Button"));
+
+                                if (!modList.Contains(configurableMod))
+                                {
+                                    modList.Add(configurableMod);
+                                }
+
+                            } while (configFileReader.ReadToNextSibling("Mod"));
+                        }
+                    }
+                }
+                return modList;
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(GetModList));
+                modList = new List<IConfigurableMod>();
+                return modList;
+            }
+        }
+
+        private void HandleException(Exception exc, string methodName)
+        {
+            string info = $"[{ModName}:{methodName}] throws exception -  {exc.TargetSite?.Name}:\n{exc.Message}\n{exc.InnerException}\n{exc.Source}\n{exc.StackTrace}";
+            ModAPI.Log.Write(info);
+            Debug.Log(info);
+        }
+
+        protected virtual void Update()
+        {
+            if (Input.GetKeyDown(ShortcutKey))
+            {
+                if (!ShowModAIScreen)
                 {
                     InitData();
                     EnableCursor(true);
                 }
-                ToggleShowUI();
-                if (!ShowUI)
+                ToggleShowUI(0);
+                if (!ShowModAIScreen)
                 {
                     EnableCursor(false);
                 }
             }
         }
 
-        private void HandleException(Exception exc, string methodName)
-        {
-            string info = $"[{ModName}:{methodName}] throws exception:" +
-                $"{exc.Message}\n" +
-                $"{exc?.StackTrace}\n" +
-                $"{exc?.InnerException}\n";
-            ModAPI.Log.Write(info);
-            ShowHUDBigInfo(HUDBigInfoMessage(info, MessageType.Error, Color.red));
-        }
-
-        private static readonly string RuntimeConfigurationFile = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), "RuntimeConfiguration.xml");
-        private static KeyCode ModKeybindingId { get; set; } = KeyCode.Keypad8;
-
-        private KeyCode GetConfigurableKey(string buttonId)
-        {
-            KeyCode configuredKeyCode = default;
-            string configuredKeybinding = string.Empty;
-
-            try
-            {
-                if (File.Exists(RuntimeConfigurationFile))
-                {
-                    using (var xmlReader = XmlReader.Create(new StreamReader(RuntimeConfigurationFile)))
-                    {
-                        while (xmlReader.Read())
-                        {
-                            if (xmlReader["ID"] == ModName)
-                            {
-                                if (xmlReader.ReadToFollowing(nameof(Button)) && xmlReader["ID"] == buttonId)
-                                {
-                                    configuredKeybinding = xmlReader.ReadElementContentAsString();
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (!string.IsNullOrEmpty(configuredKeybinding))
-                {
-                    configuredKeyCode = EnumUtils<KeyCode>.GetValue(configuredKeybinding);
-                }
-                else
-                {
-                    if (buttonId == nameof(ModKeybindingId))
-                    {
-                        configuredKeyCode = ModKeybindingId;
-                    }       
-                }
-
-                return configuredKeyCode;
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(GetConfigurableKey));
-                if (buttonId == nameof(ModKeybindingId))
-                {
-                    configuredKeyCode = ModKeybindingId;
-                }               
-                return configuredKeyCode;
-            }
-        }
-
-        private void ModManager_onPermissionValueChanged(bool optionValue)
-        {
-            string reason = optionValue ? "the game host allowed usage" : "the game host did not allow usage";
-            IsModActiveForMultiplayer = optionValue;
-
-            ShowHUDBigInfo(
-                          (optionValue ?
-                            HUDBigInfoMessage(PermissionChangedMessage($"granted", $"{reason}"), MessageType.Info, Color.green)
-                            : HUDBigInfoMessage(PermissionChangedMessage($"revoked", $"{reason}"), MessageType.Info, Color.yellow))
-                            );
-        }
-
-        private void InitData()
+        protected virtual void InitData()
         {
             LocalCursorManager = CursorManager.Get();
             LocalHUDManager = HUDManager.Get();
@@ -233,39 +266,57 @@ namespace ModAI
             LocalEnemyAISpawnManager = EnemyAISpawnManager.Get();
             LocalFirecampGroupsManager = FirecampGroupsManager.Get();
             LocalAIManager = AIManager.Get();
+            LocalStylingManager = StylingManager.Get();
         }
 
-        private void ToggleShowUI()
+        private void ToggleShowUI(int controlId)
         {
-            ShowUI = !ShowUI;
+            switch (controlId)
+            {
+                case 0:
+                    ShowModAIScreen = !ShowModAIScreen;
+                    return;
+                case 3:
+                    ShowModInfo = !ShowModInfo;
+                    return;
+                default:
+                    ShowModAIScreen = !ShowModAIScreen;
+                    ShowModInfo = !ShowModInfo;
+                    return;
+            }
         }
 
         private void OnGUI()
         {
-            if (ShowUI)
+            if (ShowModAIScreen)
             {
                 InitData();
                 InitSkinUI();
-                InitWindow();
+                ShowModAIWindow();
             }
         }
 
-        private void InitWindow()
+        private void ShowModAIWindow()
         {
-            int wid = GetHashCode();
-            ModAIScreen = GUILayout.Window(wid, ModAIScreen, InitModAIScreen, ModName,
+            if (ModAIScreenId <= 0)
+            {
+                ModAIScreenId = GetHashCode();
+            }
+            string modAIScreenTitle = $"{ModName} created by [Dragon Legion] Immaanuel#4300";
+            ModAIScreen = GUILayout.Window(ModAIScreenId, ModAIScreen, InitModAIScreen, modAIScreenTitle,
                                            GUI.skin.window,
                                            GUILayout.ExpandWidth(true),
-                                           GUILayout.MinWidth(ModScreenMinWidth),
-                                           GUILayout.MaxWidth(ModScreenMaxWidth),
+                                           GUILayout.MinWidth(ModAIScreenMinWidth),
+                                           GUILayout.MaxWidth(ModAIScreenMaxWidth),
                                            GUILayout.ExpandHeight(true),
-                                           GUILayout.MinHeight(ModScreenMinHeight),
-                                           GUILayout.MaxHeight(ModScreenMaxHeight));
+                                           GUILayout.MinHeight(ModAIScreenMinHeight),
+                                           GUILayout.MaxHeight(ModAIScreenMaxHeight));
         }
 
         private void ScreenMenuBox()
         {
-            if (GUI.Button(new Rect(ModAIScreen.width - 40f, 0f, 20f, 20f), "-", GUI.skin.button))
+            string CollapseButtonText = IsModAIScreenMinimized ? "O" : "-";
+            if (GUI.Button(new Rect(ModAIScreen.width - 40f, 0f, 20f, 20f), CollapseButtonText, GUI.skin.button))
             {
                 CollapseWindow();
             }
@@ -278,36 +329,37 @@ namespace ModAI
 
         private void CollapseWindow()
         {
-            if (!IsMinimized)
+            if (!IsModAIScreenMinimized)
             {
-                ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenMinHeight);
-                IsMinimized = true;
+                ModAIScreen = new Rect(ModAIScreenStartPositionX, ModAIScreenStartPositionY, ModAIScreenTotalWidth, ModAIScreenMinHeight);
+                IsModAIScreenMinimized = true;
             }
             else
             {
-                ModAIScreen = new Rect(ModScreenStartPositionX, ModScreenStartPositionY, ModScreenTotalWidth, ModScreenTotalHeight);
-                IsMinimized = false;
+                ModAIScreen = new Rect(ModAIScreenStartPositionX, ModAIScreenStartPositionY, ModAIScreenTotalWidth, ModAIScreenTotalHeight);
+                IsModAIScreenMinimized = false;
             }
-            InitWindow();
+            ShowModAIWindow();
         }
 
         private void CloseWindow()
         {
-            ShowUI = false;
+            ShowModAIScreen = false;
             EnableCursor(false);
         }
 
         private void InitModAIScreen(int windowId)
         {
-            ModScreenStartPositionX = ModAIScreen.x;
-            ModScreenStartPositionY = ModAIScreen.y;
+            ModAIScreenStartPositionX = ModAIScreen.x;
+            ModAIScreenStartPositionY = ModAIScreen.y;
 
-            using (var modContentScope = new GUILayout.VerticalScope(GUI.skin.box))
+            using (new GUILayout.VerticalScope(GUI.skin.box))
             {
                 ScreenMenuBox();
-                if (!IsMinimized)
+
+                if (!IsModAIScreenMinimized)
                 {
-                    ModOptionsBox();
+                    ModAIManagerBox();
                     ModAIBox();
                 }
             }
@@ -316,40 +368,163 @@ namespace ModAI
 
         private void ModAIBox()
         {
-            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            try
             {
-                using (var modaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
+                if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
                 {
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("Set the above AI options.", GUI.skin.label);
-                    SpawnWaveBox();
-                    GUILayout.Label("Select an AI from the grid.", GUI.skin.label);
-                    AISelectionScrollViewBox();
-                    SpawnAIBox();
-                    KillAiBox();
+                    using (var modaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+
+                        GUILayout.Label("Set the above AI options.", GUI.skin.label);
+                        SpawnWaveBox();
+
+                        GUILayout.Label("Select an AI from the grid.", GUI.skin.label);
+                        AISelectionScrollViewBox();
+
+                        SpawnAIBox();
+
+                        KillAiBox();
+
+                    }
+                }
+                else
+                {
+                    OnlyForSingleplayerOrWhenHostBox();
                 }
             }
-            else
+            catch (Exception exc)
             {
-                OnlyForSingleplayerOrWhenHostBox();
+
+                throw;
             }
         }
 
-        private void ModOptionsBox()
+        private void ModAIManagerBox()
         {
-            if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+            try
             {
-                using (var optionsScope = new GUILayout.VerticalScope(GUI.skin.box))
+                if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
                 {
-                    GUILayout.Label($"To toggle the mod main UI, press [{ModKeybindingId}]", GUI.skin.label);
-                    MultiplayerOptionBox();
-                    PlayerCheatOptionsBox();
-                    AiOptionsBox();
+                    using (new GUILayout.VerticalScope(GUI.skin.box))
+                    {
+                        GUILayout.Label($"{ModName} Manager", LocalStylingManager.ColoredHeaderLabel(Color.yellow));
+                        GUILayout.Label($"{ModName} Options", LocalStylingManager.ColoredSubHeaderLabel(Color.yellow));
+
+                        if (GUILayout.Button($"Mod Info", GUI.skin.button))
+                        {
+                            ToggleShowUI(3);
+                        }
+                        if (ShowModInfo)
+                        {
+                            ModInfoBox();
+                        }
+
+                        MultiplayerOptionBox();
+
+                        PlayerCheatOptionsBox();
+
+                        AiOptionsBox();
+
+                    }
+                }
+                else
+                {
+                    OnlyForSingleplayerOrWhenHostBox();
                 }
             }
-            else
+            catch (Exception exc)
             {
-                OnlyForSingleplayerOrWhenHostBox();
+                HandleException(exc, nameof(ModAIManagerBox));
+            }
+        }
+
+        private void ModInfoBox()
+        {
+            using (new GUILayout.VerticalScope(GUI.skin.box))
+            {
+                ModInfoScrollViewPosition = GUILayout.BeginScrollView(ModInfoScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(150f));
+
+                GUILayout.Label("Mod Info", LocalStylingManager.ColoredSubHeaderLabel(Color.cyan));
+
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUILayout.Label($"{nameof(IConfigurableMod.GameID)}:", LocalStylingManager.FormFieldNameLabel);
+                    GUILayout.Label($"{SelectedMod.GameID}", LocalStylingManager.FormFieldValueLabel);
+                }
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUILayout.Label($"{nameof(IConfigurableMod.ID)}:", LocalStylingManager.FormFieldNameLabel);
+                    GUILayout.Label($"{SelectedMod.ID}", LocalStylingManager.FormFieldValueLabel);
+                }
+                using (var uidScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUILayout.Label($"{nameof(IConfigurableMod.UniqueID)}:", LocalStylingManager.FormFieldNameLabel);
+                    GUILayout.Label($"{SelectedMod.UniqueID}", LocalStylingManager.FormFieldValueLabel);
+                }
+                using (var versionScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                {
+                    GUILayout.Label($"{nameof(IConfigurableMod.Version)}:", LocalStylingManager.FormFieldNameLabel);
+                    GUILayout.Label($"{SelectedMod.Version}", LocalStylingManager.FormFieldValueLabel);
+                }
+
+                GUILayout.Label("Buttons Info", LocalStylingManager.ColoredSubHeaderLabel(Color.cyan));
+
+                foreach (var configurableModButton in SelectedMod.ConfigurableModButtons)
+                {
+                    using (var btnidScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        GUILayout.Label($"{nameof(IConfigurableModButton.ID)}:", LocalStylingManager.FormFieldNameLabel);
+                        GUILayout.Label($"{configurableModButton.ID}", LocalStylingManager.FormFieldValueLabel);
+                    }
+                    using (var btnbindScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                    {
+                        GUILayout.Label($"{nameof(IConfigurableModButton.KeyBinding)}:", LocalStylingManager.FormFieldNameLabel);
+                        GUILayout.Label($"{configurableModButton.KeyBinding}", LocalStylingManager.FormFieldValueLabel);
+                    }
+                }
+
+                GUILayout.EndScrollView();
+            }
+        }
+
+        private void MultiplayerOptionBox()
+        {
+            try
+            {
+                using (new GUILayout.VerticalScope(GUI.skin.box))
+                {
+                    GUILayout.Label("Multiplayer Options", LocalStylingManager.ColoredSubHeaderLabel(Color.yellow));
+
+                    string multiplayerOptionMessage = string.Empty;
+                    if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
+                    {
+                        if (IsModActiveForSingleplayer)
+                        {
+                            multiplayerOptionMessage = $"you are the game host";
+                        }
+                        if (IsModActiveForMultiplayer)
+                        {
+                            multiplayerOptionMessage = $"the game host allowed usage";
+                        }
+                        GUILayout.Label(PermissionChangedMessage($"granted", multiplayerOptionMessage), LocalStylingManager.ColoredFieldValueLabel(Color.green));
+                    }
+                    else
+                    {
+                        if (!IsModActiveForSingleplayer)
+                        {
+                            multiplayerOptionMessage = $"you are not the game host";
+                        }
+                        if (!IsModActiveForMultiplayer)
+                        {
+                            multiplayerOptionMessage = $"the game host did not allow usage";
+                        }
+                        GUILayout.Label(PermissionChangedMessage($"revoked", $"{multiplayerOptionMessage}"), LocalStylingManager.ColoredFieldValueLabel(Color.yellow));
+                    }
+                }
+            }
+            catch (Exception exc)
+            {
+                HandleException(exc, nameof(MultiplayerOptionBox));
             }
         }
 
@@ -357,15 +532,20 @@ namespace ModAI
         {
             try
             {
-                using (var playerBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
-                {
-                    GUI.color = DefaultGuiColor;
+                using (new GUILayout.VerticalScope(GUI.skin.box))
+                {              
                     GUILayout.Label($"Player cheat options: ", GUI.skin.label);
+
                     GodModeCheatOption();
+                    
                     GhostModeCheatOption();
+                    
                     OneShotKillCheatOption();
+                    
                     OneShotDestroyCheatOption();
+                    
                     ItemDecayCheatOption();
+
                 }
             }
             catch (Exception exc)
@@ -380,7 +560,6 @@ namespace ModAI
             {
                 using (var oneshotdestroycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     bool _oneshotdestroyCheatEnabled = IsOneShotDestroyCheatEnabled;
                     IsOneShotDestroyCheatEnabled = GUILayout.Toggle(IsOneShotDestroyCheatEnabled, $"Switch to enable or disable oneshot destroy constructions cheat mode", GUI.skin.toggle);
                     if (_oneshotdestroyCheatEnabled != IsOneShotDestroyCheatEnabled)
@@ -391,16 +570,12 @@ namespace ModAI
                     }
                     if (IsOneShotDestroyCheatEnabled)
                     {
-                        GUI.color = Color.cyan;
                         GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -415,7 +590,6 @@ namespace ModAI
             {
                 using (var oneshotkillcheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     bool _oneshotkillCheatEnabled = IsOneShotAICheatEnabled;
                     IsOneShotAICheatEnabled = GUILayout.Toggle(IsOneShotAICheatEnabled, $"Switch to enable or disable oneshot kill AI cheat mode", GUI.skin.toggle);
                     if (_oneshotkillCheatEnabled != IsOneShotAICheatEnabled)
@@ -426,16 +600,12 @@ namespace ModAI
                     }
                     if (IsOneShotAICheatEnabled)
                     {
-                        GUI.color = Color.cyan;
                         GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -450,7 +620,6 @@ namespace ModAI
             {
                 using (var ghostModecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     bool _ghostModeCheatEnabled = IsGhostModeCheatEnabled;
                     IsGhostModeCheatEnabled = GUILayout.Toggle(IsGhostModeCheatEnabled, $"Switch to enable or disable ghost mode cheat mode", GUI.skin.toggle);
                     if (_ghostModeCheatEnabled != IsGhostModeCheatEnabled)
@@ -461,16 +630,12 @@ namespace ModAI
                     }
                     if (IsGhostModeCheatEnabled)
                     {
-                        GUI.color = Color.cyan;
                         GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -485,7 +650,6 @@ namespace ModAI
             {
                 using (var itemdecaycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     bool _decayCheatEnabled = IsItemDecayCheatEnabled;
                     IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
                     if (_decayCheatEnabled != IsItemDecayCheatEnabled)
@@ -501,11 +665,8 @@ namespace ModAI
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -520,7 +681,6 @@ namespace ModAI
             {
                 using (var godmodecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     bool _godModeCheatEnabled = IsGodModeCheatEnabled;
                     IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player god cheat mode", GUI.skin.toggle);
                     if (_godModeCheatEnabled != IsGodModeCheatEnabled)
@@ -531,16 +691,12 @@ namespace ModAI
                     }
                     if (IsGodModeCheatEnabled)
                     {
-                        GUI.color = Color.cyan;
                         GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -555,7 +711,6 @@ namespace ModAI
             {
                 using (var AIBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
                     GUILayout.Label($"AI options: ", GUI.skin.label);
                     CanSwimOption();
                     IsHostileOption();
@@ -600,11 +755,8 @@ namespace ModAI
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -639,16 +791,12 @@ namespace ModAI
                     }
                     if (IsHostile)
                     {
-                        GUI.color = Color.cyan;
                         GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
                     else
-                    {
-                        GUI.color = DefaultGuiColor;
+                    { 
                         GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -663,8 +811,10 @@ namespace ModAI
             {
                 using (var CanSwimScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
+
+                    GUILayout.Label($"Switch to set for AI to be able to swim or not.", LocalStylingManager.FormFieldNameLabel);
                     bool _canSwimValue = CanSwim;
-                    CanSwim = GUILayout.Toggle(CanSwim, $"Switch to set for AI to be able to swim or not", GUI.skin.toggle);
+                    CanSwim = GUILayout.Toggle(CanSwim, $"AI can swim?", LocalStylingManager.ColoredToggleFieldValueLabel(CanSwim,Color.green,LocalStylingManager.DefaultColor));
                     if (_canSwimValue != CanSwim)
                     {
                         if (LocalAIManager?.m_ActiveAIs != null)
@@ -683,16 +833,12 @@ namespace ModAI
                     }
                     if (CanSwim)
                     {
-                        GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"enabled", LocalStylingManager.ColoredToggleFieldValueLabel(CanSwim, Color.green, LocalStylingManager.DefaultColor));
                     }
                     else
                     {
-                        GUI.color = DefaultGuiColor;
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"disabled", LocalStylingManager.ColoredToggleFieldValueLabel(CanSwim, Color.green, LocalStylingManager.DefaultColor));
                     }
-
-                    GUI.color = DefaultGuiColor;
                 }
             }
             catch (Exception exc)
@@ -701,69 +847,22 @@ namespace ModAI
             }
         }
 
-        private void MultiplayerOptionBox()
-        {
-            try
-            {
-                using (var multiplayeroptionsScope = new GUILayout.VerticalScope(GUI.skin.box))
-                {
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("Multiplayer options: ", GUI.skin.label);
-                    string multiplayerOptionMessage = string.Empty;
-                    if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
-                    {
-                        GUI.color = Color.green;
-                        if (IsModActiveForSingleplayer)
-                        {
-                            multiplayerOptionMessage = $"you are the game host";
-                        }
-                        if (IsModActiveForMultiplayer)
-                        {
-                            multiplayerOptionMessage = $"the game host allowed usage";
-                        }
-                        _ = GUILayout.Toggle(true, PermissionChangedMessage($"granted", multiplayerOptionMessage), GUI.skin.toggle);
-                    }
-                    else
-                    {
-                        GUI.color = Color.yellow;
-                        if (!IsModActiveForSingleplayer)
-                        {
-                            multiplayerOptionMessage = $"you are not the game host";
-                        }
-                        if (!IsModActiveForMultiplayer)
-                        {
-                            multiplayerOptionMessage = $"the game host did not allow usage";
-                        }
-                        _ = GUILayout.Toggle(false, PermissionChangedMessage($"revoked", $"{multiplayerOptionMessage}"), GUI.skin.toggle);
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(MultiplayerOptionBox));
-            }
-        }
-
         private void SpawnWaveBox()
         {
             if (!IsGodModeCheatEnabled)
             {
-                using (var spawnWaveScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (new GUILayout.VerticalScope(GUI.skin.box))
                 {
                     LocalPlayer.GetGPSCoordinates(out int PlayerWest, out int PlayerSouth);
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", GUI.skin.label);
+                    GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", LocalStylingManager.TextLabel);
 
-                    GUI.color = Color.cyan;
-                    GUILayout.Label($"Player coordinates: W {PlayerWest} S {PlayerSouth}", GUI.skin.label);
-                    GUILayout.Label($"Wave coordinates: W {WaveWest} S {WaveSouth}", GUI.skin.label);
-
-                    GUI.color = DefaultGuiColor;
+                    GUILayout.Label($"Player coordinates: W {PlayerWest} S {PlayerSouth}", LocalStylingManager.TextLabel);
+                    GUILayout.Label($"Wave coordinates: W {WaveWest} S {WaveSouth}", LocalStylingManager.TextLabel);
                     using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
-                        GUILayout.Label("How many?: ", GUI.skin.label);
-                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.MaxWidth(100f)))
+                        GUILayout.Label("How many?: ", LocalStylingManager.TextLabel);
+                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount,LocalStylingManager.FormInputTextField);
+                        if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.Width(150f)))
                         {
                             OnClickSpawnWaveButton();
                         }
@@ -774,18 +873,8 @@ namespace ModAI
             {
                 using (var infoScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUI.color = Color.yellow;
-                    GUILayout.Label($"To enable, please switch player cheat god mode off", GUI.skin.label);
+                    GUILayout.Label($"To enable, please switch player cheat god mode off", LocalStylingManager.ColoredCommentLabel(Color.yellow));
                 }
-            }
-        }
-
-        private void OnlyForSingleplayerOrWhenHostBox()
-        {
-            using (var infoScope = new GUILayout.HorizontalScope(GUI.skin.box))
-            {
-                GUI.color = Color.yellow;
-                GUILayout.Label(OnlyForSinglePlayerOrHostMessage(), GUI.skin.label);
             }
         }
 
@@ -850,12 +939,12 @@ namespace ModAI
         {
             using (var spawnaiScope = new GUILayout.VerticalScope(GUI.skin.box))
             {
-                GUILayout.Label($"Set how many {SelectedAiName} you would like, then click [Spawn AI]", GUI.skin.label);
+                GUILayout.Label($"Set how many {SelectedAiName} you would like, then click [Spawn AI]", LocalStylingManager.TextLabel);
                 using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("How many?: ", GUI.skin.label);
-                    SelectedAiCount = GUILayout.TextField(SelectedAiCount, GUI.skin.textField, GUILayout.MaxWidth(50f));
-                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.MaxWidth(100f)))
+                    GUILayout.Label("How many?: ", LocalStylingManager.TextLabel);
+                    SelectedAiCount = GUILayout.TextField(SelectedAiCount, LocalStylingManager.FormInputTextField);
+                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.Width(150f)))
                     {
                         OnClickSpawnAIButton();
                     }
@@ -867,8 +956,8 @@ namespace ModAI
         {
             using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
             {
-                GUILayout.Label($"To kill all {SelectedAiName}, click [Execute]", GUI.skin.label);
-                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.MaxWidth(100f)))
+                GUILayout.Label($"To kill all {SelectedAiName}, click [Execute]", LocalStylingManager.TextLabel);
+                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.Width(150f)))
                 {
                     OnClickKillButton();
                 }
@@ -920,12 +1009,10 @@ namespace ModAI
             {
                 using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUI.color = DefaultGuiColor;
-                    GUILayout.Label("AI selection grid: ", GUI.skin.label);
+                    GUILayout.Label("AI selection grid", LocalStylingManager.TextLabel);
 
                     AiSelectionScrollView();
                 }
-                GUI.color = DefaultGuiColor;
             }
             catch (Exception exc)
             {
@@ -938,14 +1025,12 @@ namespace ModAI
             try
             {
                 AISelectionScrollViewPosition = GUILayout.BeginScrollView(AISelectionScrollViewPosition, GUI.skin.scrollView, GUILayout.MinHeight(300f));
-                GUIStyle selectedButton = new GUIStyle(GUI.skin.button);
-                selectedButton.onActive.textColor = Color.cyan;
 
                 string[] aiNames = GetAINames();
                 if (aiNames != null)
                 {
                     int _selectedAiIndex = SelectedAiIndex;
-                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, selectedButton);
+                    SelectedAiIndex = GUILayout.SelectionGrid(SelectedAiIndex, aiNames, 3, LocalStylingManager.ColoredSelectedGridButton(_selectedAiIndex!=SelectedAiIndex));
                     SelectedAiName = aiNames[SelectedAiIndex];
                 }
 
