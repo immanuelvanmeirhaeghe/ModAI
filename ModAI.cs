@@ -27,9 +27,9 @@ namespace ModAI
         private static readonly string ModName = nameof(ModAI);
         private static readonly string RuntimeConfiguration = Path.Combine(Application.dataPath.Replace("GH_Data", "Mods"), $"{nameof(RuntimeConfiguration)}.xml");
 
-        private static float ModAIScreenTotalWidth { get; set; } = 500f;
+        private static float ModAIScreenTotalWidth { get; set; } = 700f;
         private static float ModAIScreenTotalHeight { get; set; } = 150f;
-        private static float ModAIScreenMinWidth { get; set; } = 500f;
+        private static float ModAIScreenMinWidth { get; set; } = 700f;
         private static float ModAIScreenMaxWidth { get; set; } = Screen.width;
         private static float ModAIScreenMinHeight { get; set; } = 50f;
         private static float ModAIScreenMaxHeight { get; set; } = Screen.height;
@@ -38,8 +38,9 @@ namespace ModAI
         private bool IsModAIScreenMinimized { get; set; } = false;
         private static int ModAIScreenId { get; set; }
         private static Rect ModAIScreen = new Rect(ModAIScreenStartPositionX, ModAIScreenStartPositionY, ModAIScreenTotalWidth, ModAIScreenTotalHeight);
-        private bool ShowModAIScreen = false;
+        private bool ShowModAIScreen { get; set; } = false;
         private bool ShowModInfo { get; set; } = false;
+        private bool ShowCheatOptions { get; set; } = false;
 
         private static CursorManager LocalCursorManager;
         private static HUDManager LocalHUDManager;
@@ -169,7 +170,7 @@ namespace ModAI
         }
 
         public KeyCode ShortcutKey { get; set; } = KeyCode.Keypad8;
-
+       
         public KeyCode GetShortcutKey(string buttonID)
         {
             var ConfigurableModList = GetModList();
@@ -279,9 +280,13 @@ namespace ModAI
                 case 3:
                     ShowModInfo = !ShowModInfo;
                     return;
+                case 4:
+                    ShowCheatOptions = !ShowCheatOptions;
+                    return;
                 default:
                     ShowModAIScreen = !ShowModAIScreen;
                     ShowModInfo = !ShowModInfo;
+                    ShowCheatOptions = !ShowCheatOptions;
                     return;
             }
         }
@@ -528,7 +533,15 @@ namespace ModAI
                 {
                     GUILayout.Label($"Cheat manager", LocalStylingManager.ColoredHeaderLabel(Color.yellow));
                     GUILayout.Label($"Cheat Options", LocalStylingManager.ColoredSubHeaderLabel(Color.yellow));
-                    CheatOptionsBox();
+
+                    if (GUILayout.Button($"Cheats", GUI.skin.button))
+                    {
+                        ToggleShowUI(4);
+                    }
+                    if (ShowCheatOptions)
+                    {
+                        CheatOptionsBox();
+                    }                   
                 }
             }
             catch (Exception exc)
@@ -581,7 +594,7 @@ namespace ModAI
                 using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {
                     bool _isHallucinationValue = IsHallucination;
-                    IsHallucination = GUILayout.Toggle(IsHallucination, $"AI is a hallucination?", LocalStylingManager.ColoredToggleFieldValueLabel(IsHallucination, Color.green, LocalStylingManager.DefaultColor));
+                    IsHallucination = GUILayout.Toggle(IsHallucination, $"AI is a hallucination?", LocalStylingManager.FormFieldNameLabel);
                     if (_isHallucinationValue != IsHallucination)
                     {
                         if (LocalAIManager.m_ActiveAIs != null)
@@ -622,7 +635,7 @@ namespace ModAI
                 using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {
                     bool _isHostileValue = IsHostile;
-                    IsHostile = GUILayout.Toggle(IsHostile, $"AI is hostile?", LocalStylingManager.ColoredToggleFieldValueLabel(IsHostile, Color.green, LocalStylingManager.DefaultColor));
+                    IsHostile = GUILayout.Toggle(IsHostile, $"AI is hostile?", LocalStylingManager.FormFieldNameLabel);
                     if (_isHostileValue != IsHostile)
                     {
                         if (LocalAIManager.m_ActiveAIs != null)
@@ -662,7 +675,7 @@ namespace ModAI
                 using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {                
                     bool _canSwimValue = CanSwim;
-                    CanSwim = GUILayout.Toggle(CanSwim, $"AI can swim?", LocalStylingManager.ColoredToggleFieldValueLabel(CanSwim,Color.green,LocalStylingManager.DefaultColor));
+                    CanSwim = GUILayout.Toggle(CanSwim, $"AI can swim?", LocalStylingManager.FormFieldNameLabel);
                     if (_canSwimValue != CanSwim)
                     {
                         if (LocalAIManager?.m_ActiveAIs != null)
