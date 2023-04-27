@@ -360,31 +360,29 @@ namespace ModAI
                 if (!IsModAIScreenMinimized)
                 {
                     ModAIManagerBox();
-                    ModAIBox();
+                    CheatsManagerBox();
+                    AIManagerBox();
                 }
             }
             GUI.DragWindow(new Rect(0f, 0f, 10000f, 10000f));
         }
 
-        private void ModAIBox()
+        private void AIManagerBox()
         {
             try
             {
                 if (IsModActiveForSingleplayer || IsModActiveForMultiplayer)
                 {
-                    using (var modaiboxScope = new GUILayout.VerticalScope(GUI.skin.box))
+                    using (new GUILayout.VerticalScope(GUI.skin.box))
                     {
+                        GUILayout.Label($"AI Manager", LocalStylingManager.ColoredHeaderLabel(Color.yellow));
+                        GUILayout.Label($"AI Options", LocalStylingManager.ColoredSubHeaderLabel(Color.yellow));
+                        AiOptionsBox();
 
-                        GUILayout.Label("Set the above AI options.", GUI.skin.label);
                         SpawnWaveBox();
-
-                        GUILayout.Label("Select an AI from the grid.", GUI.skin.label);
                         AISelectionScrollViewBox();
-
                         SpawnAIBox();
-
                         KillAiBox();
-
                     }
                 }
                 else
@@ -394,8 +392,7 @@ namespace ModAI
             }
             catch (Exception exc)
             {
-
-                throw;
+                HandleException(exc, nameof(AIManagerBox));
             }
         }
 
@@ -420,11 +417,6 @@ namespace ModAI
                         }
 
                         MultiplayerOptionBox();
-
-                        PlayerCheatOptionsBox();
-
-                        AiOptionsBox();
-
                     }
                 }
                 else
@@ -528,180 +520,35 @@ namespace ModAI
             }
         }
 
-        private void PlayerCheatOptionsBox()
+        private void CheatsManagerBox()
         {
             try
             {
                 using (new GUILayout.VerticalScope(GUI.skin.box))
-                {              
-                    GUILayout.Label($"Player cheat options: ", GUI.skin.label);
-
-                    GodModeCheatOption();
-                    
-                    GhostModeCheatOption();
-                    
-                    OneShotKillCheatOption();
-                    
-                    OneShotDestroyCheatOption();
-                    
-                    ItemDecayCheatOption();
-
+                {
+                    GUILayout.Label($"Cheat manager", LocalStylingManager.ColoredHeaderLabel(Color.yellow));
+                    GUILayout.Label($"Cheat Options", LocalStylingManager.ColoredSubHeaderLabel(Color.yellow));
+                    CheatOptionsBox();
                 }
             }
             catch (Exception exc)
             {
-                HandleException(exc, nameof(PlayerCheatOptionsBox));
+                HandleException(exc, nameof(CheatsManagerBox));
             }
         }
 
-        private void OneShotDestroyCheatOption()
+        private void CheatOptionsBox()
         {
-            try
+            using (new GUILayout.VerticalScope(GUI.skin.box))
             {
-                using (var oneshotdestroycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    bool _oneshotdestroyCheatEnabled = IsOneShotDestroyCheatEnabled;
-                    IsOneShotDestroyCheatEnabled = GUILayout.Toggle(IsOneShotDestroyCheatEnabled, $"Switch to enable or disable oneshot destroy constructions cheat mode", GUI.skin.toggle);
-                    if (_oneshotdestroyCheatEnabled != IsOneShotDestroyCheatEnabled)
-                    {
-                        Cheats.m_OneShotConstructions = IsOneShotDestroyCheatEnabled;
-                        string _oneshotdestroyText = $"Oneshot destroy constructions cheat mode has been { (IsOneShotDestroyCheatEnabled ? "enabled" : "disabled") }";
-                        ShowHUDBigInfo(HUDBigInfoMessage(_oneshotdestroyText, MessageType.Info, Color.green));
-                    }
-                    if (IsOneShotDestroyCheatEnabled)
-                    {
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                    else
-                    {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(OneShotDestroyCheatOption));
-            }
-        }
+                GUILayout.Label("These are all available cheats. You can switch any cheat on / off.", LocalStylingManager.TextLabel);
 
-        private void OneShotKillCheatOption()
-        {
-            try
-            {
-                using (var oneshotkillcheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    bool _oneshotkillCheatEnabled = IsOneShotAICheatEnabled;
-                    IsOneShotAICheatEnabled = GUILayout.Toggle(IsOneShotAICheatEnabled, $"Switch to enable or disable oneshot kill AI cheat mode", GUI.skin.toggle);
-                    if (_oneshotkillCheatEnabled != IsOneShotAICheatEnabled)
-                    {
-                        Cheats.m_OneShotAI = IsOneShotAICheatEnabled;
-                        string _oneshotkillText = $"Oneshot kill AI cheat mode has been { (IsOneShotAICheatEnabled ? "enabled" : "disabled") }";
-                        ShowHUDBigInfo(HUDBigInfoMessage(_oneshotkillText, MessageType.Info, Color.green));
-                    }
-                    if (IsOneShotAICheatEnabled)
-                    {
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                    else
-                    {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(OneShotKillCheatOption));
-            }
-        }
-
-        private void GhostModeCheatOption()
-        {
-            try
-            {
-                using (var ghostModecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    bool _ghostModeCheatEnabled = IsGhostModeCheatEnabled;
-                    IsGhostModeCheatEnabled = GUILayout.Toggle(IsGhostModeCheatEnabled, $"Switch to enable or disable ghost mode cheat mode", GUI.skin.toggle);
-                    if (_ghostModeCheatEnabled != IsGhostModeCheatEnabled)
-                    {
-                        Cheats.m_GhostMode = IsGhostModeCheatEnabled;
-                        string _ghostModeText = $"Ghost mode cheat mode has been { (IsGhostModeCheatEnabled ? "enabled" : "disabled") }";
-                        ShowHUDBigInfo(HUDBigInfoMessage(_ghostModeText, MessageType.Info, Color.green));
-                    }
-                    if (IsGhostModeCheatEnabled)
-                    {
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                    else
-                    {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(GhostModeCheatOption));
-            }
-        }
-
-        private void ItemDecayCheatOption()
-        {
-            try
-            {
-                using (var itemdecaycheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    bool _decayCheatEnabled = IsItemDecayCheatEnabled;
-                    IsItemDecayCheatEnabled = GUILayout.Toggle(IsItemDecayCheatEnabled, $"Switch to enable or disable item decay cheat mode", GUI.skin.toggle);
-                    if (_decayCheatEnabled != IsItemDecayCheatEnabled)
-                    {
-                        Cheats.m_ImmortalItems = IsItemDecayCheatEnabled;
-                        string _decayText = $"Item decay cheat mode has been { (IsItemDecayCheatEnabled ? "enabled" : "disabled") }";
-                        ShowHUDBigInfo(HUDBigInfoMessage(_decayText, MessageType.Info, Color.green));
-                    }
-                    if (IsItemDecayCheatEnabled)
-                    {
-                        GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                    else
-                    {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(ItemDecayCheatOption));
-            }
-        }
-
-        private void GodModeCheatOption()
-        {
-            try
-            {
-                using (var godmodecheatScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-                    bool _godModeCheatEnabled = IsGodModeCheatEnabled;
-                    IsGodModeCheatEnabled = GUILayout.Toggle(IsGodModeCheatEnabled, $"Switch to enable or disable player god cheat mode", GUI.skin.toggle);
-                    if (_godModeCheatEnabled != IsGodModeCheatEnabled)
-                    {
-                        Cheats.m_GodMode = IsGodModeCheatEnabled;
-                        string _godText = $"Player god cheat mode has been { (IsGodModeCheatEnabled ? "enabled" : "disabled") }";
-                        ShowHUDBigInfo(HUDBigInfoMessage(_godText, MessageType.Info, Color.green));
-                    }
-                    if (IsGodModeCheatEnabled)
-                    {
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                    else
-                    {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
-                    }
-                }
-            }
-            catch (Exception exc)
-            {
-                HandleException(exc, nameof(GodModeCheatOption));
+                Cheats.m_OneShotAI = GUILayout.Toggle(Cheats.m_OneShotAI, "One shot AI cheat on / off", GUI.skin.toggle);
+                Cheats.m_OneShotConstructions = GUILayout.Toggle(Cheats.m_OneShotConstructions, "One shot constructions cheat on / off", GUI.skin.toggle);
+                Cheats.m_GhostMode = GUILayout.Toggle(Cheats.m_GhostMode, "Ghost mode cheat on / off", GUI.skin.toggle);
+                Cheats.m_GodMode = GUILayout.Toggle(Cheats.m_GodMode, "God mode cheat on / off", GUI.skin.toggle);
+                Cheats.m_ImmortalItems = GUILayout.Toggle(Cheats.m_ImmortalItems, "No item decay cheat on / off", GUI.skin.toggle);
+                Cheats.m_InstantBuild = GUILayout.Toggle(Cheats.m_InstantBuild, "Instant build cheat on / off", GUI.skin.toggle);
             }
         }
 
@@ -709,11 +556,15 @@ namespace ModAI
         {
             try
             {
-                using (var AIBehaviourScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    GUILayout.Label($"AI options: ", GUI.skin.label);
+                    GUILayout.Label($"Switch to set for AI to be able to swim or not.", LocalStylingManager.FormFieldNameLabel);
                     CanSwimOption();
+
+                    GUILayout.Label($"Switch to set for AI to become hostile or not", LocalStylingManager.FormFieldNameLabel);
                     IsHostileOption();
+
+                    GUILayout.Label($"Switch to set for AI to be a hallucination or not", LocalStylingManager.FormFieldNameLabel);
                     IsHallucinationOption();
                 }
             }
@@ -727,10 +578,10 @@ namespace ModAI
         {
             try
             {
-                using (var isHallucinationScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {
                     bool _isHallucinationValue = IsHallucination;
-                    IsHallucination = GUILayout.Toggle(IsHallucination, $"Switch to set for AI to be a hallucination or not", GUI.skin.toggle);
+                    IsHallucination = GUILayout.Toggle(IsHallucination, $"AI is a hallucination?", LocalStylingManager.ColoredToggleFieldValueLabel(IsHallucination, Color.green, LocalStylingManager.DefaultColor));
                     if (_isHallucinationValue != IsHallucination)
                     {
                         if (LocalAIManager.m_ActiveAIs != null)
@@ -750,12 +601,11 @@ namespace ModAI
                     }
                     if (IsHallucination)
                     {
-                        GUI.color = Color.cyan;
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"enabled", LocalStylingManager.ColoredToggleFieldValueLabel(IsHallucination, Color.green, LocalStylingManager.DefaultColor));
                     }
                     else
                     {
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"disabled", LocalStylingManager.ColoredToggleFieldValueLabel(IsHallucination, Color.green, LocalStylingManager.DefaultColor));
                     }
                 }
             }
@@ -769,10 +619,10 @@ namespace ModAI
         {
             try
             {
-                using (var IsHostileScope = new GUILayout.HorizontalScope(GUI.skin.box))
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {
                     bool _isHostileValue = IsHostile;
-                    IsHostile = GUILayout.Toggle(IsHostile, $"Switch to set for AI to become hostile or not", GUI.skin.toggle);
+                    IsHostile = GUILayout.Toggle(IsHostile, $"AI is hostile?", LocalStylingManager.ColoredToggleFieldValueLabel(IsHostile, Color.green, LocalStylingManager.DefaultColor));
                     if (_isHostileValue != IsHostile)
                     {
                         if (LocalAIManager.m_ActiveAIs != null)
@@ -791,11 +641,11 @@ namespace ModAI
                     }
                     if (IsHostile)
                     {
-                        GUILayout.Label($"enabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"enabled", LocalStylingManager.ColoredToggleFieldValueLabel(IsHostile, Color.green, LocalStylingManager.DefaultColor));
                     }
                     else
                     { 
-                        GUILayout.Label($"disabled", GUI.skin.label, GUILayout.MaxWidth(100f));
+                        GUILayout.Label($"disabled", LocalStylingManager.ColoredToggleFieldValueLabel(IsHostile, Color.green, LocalStylingManager.DefaultColor));
                     }
                 }
             }
@@ -809,10 +659,8 @@ namespace ModAI
         {
             try
             {
-                using (var CanSwimScope = new GUILayout.HorizontalScope(GUI.skin.box))
-                {
-
-                    GUILayout.Label($"Switch to set for AI to be able to swim or not.", LocalStylingManager.FormFieldNameLabel);
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
+                {                
                     bool _canSwimValue = CanSwim;
                     CanSwim = GUILayout.Toggle(CanSwim, $"AI can swim?", LocalStylingManager.ColoredToggleFieldValueLabel(CanSwim,Color.green,LocalStylingManager.DefaultColor));
                     if (_canSwimValue != CanSwim)
@@ -853,15 +701,12 @@ namespace ModAI
             {
                 using (new GUILayout.VerticalScope(GUI.skin.box))
                 {
-                    LocalPlayer.GetGPSCoordinates(out int PlayerWest, out int PlayerSouth);
-                    GUILayout.Label("Set how many tribals you would like in a wave, then click [Spawn wave]", LocalStylingManager.TextLabel);
+                    GUILayout.Label("Here you can spawn in waves of enemies. Set how many enemies you would like in the wave. Click [Spawn wave] to start the attack.", LocalStylingManager.TextLabel);
 
-                    GUILayout.Label($"Player coordinates: W {PlayerWest} S {PlayerSouth}", LocalStylingManager.TextLabel);
-                    GUILayout.Label($"Wave coordinates: W {WaveWest} S {WaveSouth}", LocalStylingManager.TextLabel);
                     using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                     {
-                        GUILayout.Label("How many?: ", LocalStylingManager.TextLabel);
-                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount,LocalStylingManager.FormInputTextField);
+                        GUILayout.Label("Enemy count in wave", LocalStylingManager.TextLabel);
+                        TribalsInWaveCount = GUILayout.TextField(TribalsInWaveCount, LocalStylingManager.FormInputTextField);
                         if (GUILayout.Button("Spawn wave", GUI.skin.button, GUILayout.Width(150f)))
                         {
                             OnClickSpawnWaveButton();
@@ -937,14 +782,17 @@ namespace ModAI
 
         private void SpawnAIBox()
         {
-            using (var spawnaiScope = new GUILayout.VerticalScope(GUI.skin.box))
+            using (new GUILayout.VerticalScope(GUI.skin.box))
             {
-                GUILayout.Label($"Set how many {SelectedAiName} you would like, then click [Spawn AI]", LocalStylingManager.TextLabel);
+                GUILayout.Label($"Here you can spawn in any selected being. Set how many AI beings you would like to spawn in, then click [Spawn {SelectedAiName}].", LocalStylingManager.TextLabel);
+
+                GUILayout.Label($"Only a count between min. 1 and max. 5 beings is allowed!", LocalStylingManager.ColoredCommentLabel(Color.yellow) );
+
                 using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    GUILayout.Label("How many?: ", LocalStylingManager.TextLabel);
+                    GUILayout.Label($"AI count", LocalStylingManager.TextLabel);
                     SelectedAiCount = GUILayout.TextField(SelectedAiCount, LocalStylingManager.FormInputTextField);
-                    if (GUILayout.Button("Spawn AI", GUI.skin.button, GUILayout.Width(150f)))
+                    if (GUILayout.Button($"Spawn {SelectedAiName}", GUI.skin.button, GUILayout.Width(150f)))
                     {
                         OnClickSpawnAIButton();
                     }
@@ -954,14 +802,19 @@ namespace ModAI
 
         private void KillAiBox()
         {
-            using (var actionScope = new GUILayout.HorizontalScope(GUI.skin.box))
+            using (new GUILayout.VerticalScope(GUI.skin.box))
             {
-                GUILayout.Label($"To kill all {SelectedAiName}, click [Execute]", LocalStylingManager.TextLabel);
-                if (GUILayout.Button($"Execute", GUI.skin.button, GUILayout.Width(150f)))
+                GUILayout.Label($"Here you can kill all occurrences in-game of a selected AI being type.", LocalStylingManager.TextLabel);
+
+                using (new GUILayout.HorizontalScope(GUI.skin.box))
                 {
-                    OnClickKillButton();
+                    GUILayout.Label($"To kill all {SelectedAiName}", LocalStylingManager.TextLabel);
+                    if (GUILayout.Button($"Execute {SelectedAiName}", GUI.skin.button, GUILayout.Width(150f)))
+                    {
+                        OnClickKillButton();
+                    }
                 }
-            }
+            }           
         }
 
         private void OnClickKillButton()
@@ -1007,7 +860,7 @@ namespace ModAI
         {
             try
             {
-                using (var selectionScope = new GUILayout.VerticalScope(GUI.skin.box))
+                using (new GUILayout.VerticalScope(GUI.skin.box))
                 {
                     GUILayout.Label("AI selection grid", LocalStylingManager.TextLabel);
 
